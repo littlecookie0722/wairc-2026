@@ -160,3 +160,67 @@ This writes:
 ```text
 outputs/submissions/submission_iq_cnn.txt
 ```
+
+## High-Score STFT Spectrogram Pipeline
+
+The stronger pipeline follows the high-scoring approach:
+
+- convert 3-node IQ samples into cached STFT spectrograms
+- train an ImageNet-pretrained 2D backbone such as ResNet34
+- use BCE with per-class `pos_weight`
+- search the best validation inference rule
+- run test-time augmentation with multiple time crops
+- optionally ensemble k-fold and multi-architecture models
+
+Install the extra CPU/GPU dependencies:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-gpu.txt
+```
+
+Train one strong model:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.train_spectrogram --epochs 40 --batch-size 16 --num-workers 2
+```
+
+This writes:
+
+- `outputs/spectrogram/best_model.pth`
+- `outputs/spectrogram/best_rule.json`
+- STFT caches under `outputs/cache/stft/`
+
+Predict and validate:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.predict_spectrogram
+.\.venv\Scripts\python.exe -m src.validate_submission outputs/submissions/submission_spectrogram.txt
+```
+
+For a higher-score k-fold ensemble, train each fold:
+
+```powershell
+0..4 | ForEach-Object {
+  .\.venv\Scripts\python.exe -m src.train_spectrogram_kfold --fold $_ --tag r34 --epochs 40 --batch-size 16 --num-workers 2
+}
+```
+
+Search the OOF inference rule and predict with the ensemble:
+
+```powershell
+.\.venv\Scripts\python.exe -m src.search_spectrogram_kfold_thresholds --tags r34
+.\.venv\Scripts\python.exe -m src.predict_spectrogram_kfold --tags r34
+.\.venv\Scripts\python.exe -m src.validate_submission outputs/submissions/submission_spectrogram_kfold.txt
+```
+
+To push beyond the single ResNet34 ensemble, train additional tags and average them:
+
+```powershell
+0..4 | ForEach-Object {
+  .\.venv\Scripts\python.exe -m src.train_spectrogram_kfold --fold $_ --tag b0 --arch efficientnet_b0 --epochs 40 --batch-size 24 --num-workers 2
+}
+
+.\.venv\Scripts\python.exe -m src.search_spectrogram_kfold_thresholds --tags r34 b0
+.\.venv\Scripts\python.exe -m src.predict_spectrogram_kfold --tags r34 b0
+```
