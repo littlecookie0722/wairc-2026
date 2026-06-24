@@ -1,3 +1,5 @@
+import json
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -6,6 +8,7 @@ import torch
 from torch import nn
 from torch.utils.data import Dataset
 
+from .config import CACHE_DIR
 from .config import NUM_CLASSES
 from .data import label_to_multihot, resolve_iq_path
 
@@ -40,6 +43,35 @@ def _iq_to_fixed_channels(raw: np.ndarray, has_node: int, sequence_pairs: int) -
     return channels
 
 
+def _sample_to_tensors(
+    root: Path,
+    row: dict[str, Any],
+    sequence_pairs: int,
+    has_labels: bool,
+) -> dict[str, np.ndarray]:
+    path = resolve_iq_path(root, row)
+
+    node_channels = []
+    node_mask = []
+    sample_rates = []
+    with np.load(path) as data:
+        for node in range(3):
+            has_node = int(row[f"has_node{node}"])
+            raw = data[f"iq_node{node}"]
+            node_channels.append(_iq_to_fixed_channels(raw, has_node, sequence_pairs))
+            node_mask.append(float(has_node))
+            sample_rates.append(float(data[f"sample_rate_node{node}"]) / 1e8 if has_node else 0.0)
+
+    arrays = {
+        "iq": np.concatenate(node_channels, axis=0).astype(np.float32, copy=False),
+        "meta": np.asarray([*node_mask, *sample_rates], dtype=np.float32),
+        "sample_id": np.asarray(int(row["sample_id"]), dtype=np.int64),
+    }
+    if has_labels:
+        arrays["target"] = np.asarray(label_to_multihot(row["label_signature"], NUM_CLASSES), dtype=np.float32)
+    return arrays
+
+
 class IQDataset(Dataset):
     def __init__(
         self,
@@ -60,30 +92,191 @@ class IQDataset(Dataset):
 
     def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
         row = self.rows[index]
-        path = resolve_iq_path(self.root, row)
-
-        node_channels = []
-        node_mask = []
-        sample_rates = []
-        with np.load(path) as data:
-            for node in range(3):
-                has_node = int(row[f"has_node{node}"])
-                raw = data[f"iq_node{node}"]
-                node_channels.append(_iq_to_fixed_channels(raw, has_node, self.sequence_pairs))
-                node_mask.append(float(has_node))
-                sample_rates.append(float(data[f"sample_rate_node{node}"]) / 1e8 if has_node else 0.0)
-
-        iq = np.concatenate(node_channels, axis=0)
-        meta = np.asarray([*node_mask, *sample_rates], dtype=np.float32)
+        arrays = _sample_to_tensors(self.root, row, self.sequence_pairs, self.has_labels)
         item = {
-            "iq": torch.from_numpy(iq),
-            "meta": torch.from_numpy(meta),
-            "sample_id": torch.tensor(int(row["sample_id"]), dtype=torch.long),
+            "iq": torch.from_numpy(arrays["iq"]),
+            "meta": torch.from_numpy(arrays["meta"]),
+            "sample_id": torch.from_numpy(arrays["sample_id"]),
         }
 
         if self.has_labels:
-            target = np.asarray(label_to_multihot(row["label_signature"], NUM_CLASSES), dtype=np.float32)
-            item["target"] = torch.from_numpy(target)
+            item["target"] = torch.from_numpy(arrays["target"])
+        return item
+
+
+def iq_cache_base_path(
+    name: str,
+    sequence_pairs: int,
+    max_samples: int | None = None,
+    cache_dir: Path = CACHE_DIR,
+) -> Path:
+    suffix = f"{name}_iq_pairs{sequence_pairs}"
+    if max_samples:
+        suffix += f"_n{max_samples}"
+    return Path(cache_dir) / suffix
+
+
+def _cache_paths(base_path: Path) -> dict[str, Path]:
+    base = Path(base_path)
+    return {
+        "metadata": base.with_suffix(".json"),
+        "sample_ids": base.with_suffix(".sample_ids.npy"),
+        "iq": base.with_suffix(".iq.npy"),
+        "meta": base.with_suffix(".meta.npy"),
+        "target": base.with_suffix(".target.npy"),
+    }
+
+
+def _load_cache_metadata(base_path: Path) -> dict[str, Any] | None:
+    path = _cache_paths(base_path)["metadata"]
+    if not path.exists():
+        return None
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _cache_matches(
+    base_path: Path,
+    rows: list[dict[str, Any]],
+    sequence_pairs: int,
+    has_labels: bool,
+) -> bool:
+    paths = _cache_paths(base_path)
+    required = [paths["metadata"], paths["sample_ids"], paths["iq"], paths["meta"]]
+    if has_labels:
+        required.append(paths["target"])
+    if any(not path.exists() for path in required):
+        return False
+
+    metadata = _load_cache_metadata(base_path)
+    if not metadata:
+        return False
+    if int(metadata.get("sequence_pairs", -1)) != int(sequence_pairs):
+        return False
+    if bool(metadata.get("has_labels")) != bool(has_labels):
+        return False
+    if int(metadata.get("num_samples", -1)) != len(rows):
+        return False
+
+    expected_ids = np.asarray([int(row["sample_id"]) for row in rows], dtype=np.int64)
+    cached_ids = np.load(paths["sample_ids"], mmap_mode="r")
+    return cached_ids.shape == expected_ids.shape and bool(np.array_equal(cached_ids, expected_ids))
+
+
+def build_iq_tensor_cache(
+    root: Path,
+    rows: list[dict[str, Any]],
+    sequence_pairs: int,
+    has_labels: bool,
+    base_path: Path,
+    dtype: str = "float16",
+    force: bool = False,
+    progress_every: int = 250,
+) -> Path:
+    if dtype not in {"float16", "float32"}:
+        raise ValueError("cache dtype must be 'float16' or 'float32'")
+    base_path = Path(base_path)
+    if not force and _cache_matches(base_path, rows, sequence_pairs, has_labels):
+        print(f"Loaded IQ tensor cache: {base_path}")
+        return base_path
+
+    paths = _cache_paths(base_path)
+    base_path.parent.mkdir(parents=True, exist_ok=True)
+    np_dtype = np.float16 if dtype == "float16" else np.float32
+    num_rows = len(rows)
+    iq = np.lib.format.open_memmap(paths["iq"], mode="w+", dtype=np_dtype, shape=(num_rows, 6, sequence_pairs))
+    meta = np.lib.format.open_memmap(paths["meta"], mode="w+", dtype=np.float32, shape=(num_rows, 6))
+    sample_ids = np.lib.format.open_memmap(paths["sample_ids"], mode="w+", dtype=np.int64, shape=(num_rows,))
+    target = None
+    if has_labels:
+        target = np.lib.format.open_memmap(paths["target"], mode="w+", dtype=np.float32, shape=(num_rows, NUM_CLASSES))
+
+    total = len(rows)
+    for idx, row in enumerate(rows):
+        arrays = _sample_to_tensors(root, row, sequence_pairs, has_labels)
+        iq[idx] = arrays["iq"].astype(np_dtype, copy=False)
+        meta[idx] = arrays["meta"]
+        sample_ids[idx] = arrays["sample_id"]
+        if target is not None:
+            target[idx] = arrays["target"]
+        item_no = idx + 1
+        if progress_every and (item_no % progress_every == 0 or item_no == total):
+            print(f"Cached IQ tensors: {item_no}/{total}")
+
+    iq.flush()
+    meta.flush()
+    sample_ids.flush()
+    if target is not None:
+        target.flush()
+
+    metadata = {
+        "root": str(Path(root).resolve()),
+        "num_samples": num_rows,
+        "sequence_pairs": int(sequence_pairs),
+        "has_labels": bool(has_labels),
+        "iq_dtype": dtype,
+        "iq_shape": [num_rows, 6, int(sequence_pairs)],
+        "meta_shape": [num_rows, 6],
+        "target_shape": [num_rows, NUM_CLASSES] if has_labels else None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    paths["metadata"].write_text(json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+    print(f"Saved IQ tensor cache: {base_path}")
+    return base_path
+
+
+class CachedIQDataset(Dataset):
+    def __init__(
+        self,
+        base_path: Path,
+        rows: list[dict[str, Any]],
+        has_labels: bool,
+    ) -> None:
+        self.base_path = Path(base_path)
+        self.rows = rows
+        self.has_labels = has_labels
+        self.paths = _cache_paths(self.base_path)
+        self.metadata = _load_cache_metadata(self.base_path)
+        if not self.metadata:
+            raise FileNotFoundError(f"Missing IQ tensor cache metadata: {self.paths['metadata']}")
+        if bool(self.metadata.get("has_labels")) != bool(has_labels):
+            raise ValueError("Cached IQ tensor labels setting does not match dataset request")
+
+        cached_ids = np.load(self.paths["sample_ids"], mmap_mode="r")
+        id_to_cache_index = {int(sample_id): idx for idx, sample_id in enumerate(cached_ids.tolist())}
+        self.cache_indices = []
+        for row in rows:
+            sample_id = int(row["sample_id"])
+            if sample_id not in id_to_cache_index:
+                raise ValueError(f"Sample {sample_id} is missing from IQ tensor cache: {self.base_path}")
+            self.cache_indices.append(id_to_cache_index[sample_id])
+        self._iq = None
+        self._meta = None
+        self._target = None
+
+    def _arrays(self) -> tuple[np.ndarray, np.ndarray, np.ndarray | None]:
+        if self._iq is None:
+            self._iq = np.load(self.paths["iq"], mmap_mode="r")
+            self._meta = np.load(self.paths["meta"], mmap_mode="r")
+            if self.has_labels:
+                self._target = np.load(self.paths["target"], mmap_mode="r")
+        return self._iq, self._meta, self._target
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def __getitem__(self, index: int) -> dict[str, torch.Tensor]:
+        iq, meta, target = self._arrays()
+        cache_index = self.cache_indices[index]
+        row = self.rows[index]
+        item = {
+            "iq": torch.from_numpy(np.array(iq[cache_index], dtype=np.float32, copy=True)),
+            "meta": torch.from_numpy(np.array(meta[cache_index], dtype=np.float32, copy=True)),
+            "sample_id": torch.tensor(int(row["sample_id"]), dtype=torch.long),
+        }
+        if self.has_labels:
+            if target is None:
+                raise RuntimeError("Cached IQ target array is not loaded")
+            item["target"] = torch.from_numpy(np.array(target[cache_index], dtype=np.float32, copy=True))
         return item
 
 
