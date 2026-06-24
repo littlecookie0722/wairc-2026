@@ -6,6 +6,7 @@ from typing import Any
 import numpy as np
 import torch
 from torch import nn
+import torch.nn.functional as F
 from torch.utils.data import Dataset
 
 from .config import CACHE_DIR
@@ -332,6 +333,149 @@ class IQCNN(nn.Module):
         signal_features = self.signal_encoder(iq)
         meta_features = self.meta_encoder(meta)
         return self.classifier(torch.cat([signal_features, meta_features], dim=1))
+
+
+class TimeFreqIQCNN(nn.Module):
+    def __init__(
+        self,
+        num_classes: int = NUM_CLASSES,
+        in_channels: int = 6,
+        meta_features: int = 6,
+        width: int = 64,
+        dropout: float = 0.20,
+        stft_n_fft: int = 512,
+        stft_hop_length: int = 256,
+        stft_max_frames: int = 256,
+        freq_bins: int = 128,
+    ) -> None:
+        super().__init__()
+        if in_channels != 6:
+            raise ValueError("TimeFreqIQCNN expects 6 IQ channels from 3 I/Q node pairs")
+        if stft_n_fft <= 0 or stft_hop_length <= 0 or stft_max_frames <= 0 or freq_bins <= 0:
+            raise ValueError("STFT settings must be positive")
+        self.config = {
+            "num_classes": num_classes,
+            "in_channels": in_channels,
+            "meta_features": meta_features,
+            "width": width,
+            "dropout": dropout,
+            "stft_n_fft": stft_n_fft,
+            "stft_hop_length": stft_hop_length,
+            "stft_max_frames": stft_max_frames,
+            "freq_bins": freq_bins,
+        }
+        self.stft_n_fft = int(stft_n_fft)
+        self.stft_hop_length = int(stft_hop_length)
+        self.stft_max_frames = int(stft_max_frames)
+        self.freq_bins = int(freq_bins)
+
+        self.time_encoder = nn.Sequential(
+            nn.Conv1d(in_channels, width, kernel_size=9, stride=2, padding=4, bias=False),
+            nn.BatchNorm1d(width),
+            nn.SiLU(),
+            nn.Conv1d(width, width, kernel_size=7, stride=2, padding=3, bias=False),
+            nn.BatchNorm1d(width),
+            nn.SiLU(),
+            nn.Conv1d(width, width * 2, kernel_size=5, stride=2, padding=2, bias=False),
+            nn.BatchNorm1d(width * 2),
+            nn.SiLU(),
+            nn.Conv1d(width * 2, width * 2, kernel_size=5, stride=2, padding=2, bias=False),
+            nn.BatchNorm1d(width * 2),
+            nn.SiLU(),
+            nn.Conv1d(width * 2, width * 4, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm1d(width * 4),
+            nn.SiLU(),
+            nn.AdaptiveAvgPool1d(1),
+            nn.Flatten(),
+        )
+        freq_width = max(8, width // 2)
+        self.freq_encoder = nn.Sequential(
+            nn.Conv2d(3, freq_width, kernel_size=5, stride=2, padding=2, bias=False),
+            nn.BatchNorm2d(freq_width),
+            nn.SiLU(),
+            nn.Conv2d(freq_width, width, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(width),
+            nn.SiLU(),
+            nn.Conv2d(width, width * 2, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(width * 2),
+            nn.SiLU(),
+            nn.Conv2d(width * 2, width * 2, kernel_size=3, stride=2, padding=1, bias=False),
+            nn.BatchNorm2d(width * 2),
+            nn.SiLU(),
+            nn.AdaptiveAvgPool2d(1),
+            nn.Flatten(),
+        )
+        self.meta_encoder = nn.Sequential(
+            nn.Linear(meta_features, width),
+            nn.SiLU(),
+            nn.Dropout(dropout),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(width * 4 + width * 2 + width, width * 3),
+            nn.SiLU(),
+            nn.Dropout(dropout),
+            nn.Linear(width * 3, width),
+            nn.SiLU(),
+            nn.Dropout(dropout),
+            nn.Linear(width, num_classes),
+        )
+
+    def _stft_features(self, iq: torch.Tensor) -> torch.Tensor:
+        batch_size, channels, sequence_len = iq.shape
+        node_iq = iq.reshape(batch_size, 3, 2, sequence_len)
+        complex_iq = torch.complex(node_iq[:, :, 0, :], node_iq[:, :, 1, :])
+        flat_iq = complex_iq.reshape(batch_size * 3, sequence_len)
+        if sequence_len < self.stft_n_fft:
+            flat_iq = F.pad(flat_iq, (0, self.stft_n_fft - sequence_len))
+        window = torch.hann_window(self.stft_n_fft, device=iq.device, dtype=iq.dtype)
+        spectrum = torch.stft(
+            flat_iq,
+            n_fft=self.stft_n_fft,
+            hop_length=self.stft_hop_length,
+            window=window,
+            center=False,
+            return_complex=True,
+        )
+        magnitude = torch.log1p(torch.abs(spectrum))
+        magnitude = magnitude.reshape(batch_size, 3, magnitude.shape[-2], magnitude.shape[-1])
+        magnitude = magnitude[:, :, : self.freq_bins, :]
+        if magnitude.shape[-2] < self.freq_bins or magnitude.shape[-1] < self.stft_max_frames:
+            pad_freq = max(0, self.freq_bins - magnitude.shape[-2])
+            pad_time = max(0, self.stft_max_frames - magnitude.shape[-1])
+            magnitude = F.pad(magnitude, (0, pad_time, 0, pad_freq))
+        magnitude = magnitude[:, :, : self.freq_bins, : self.stft_max_frames]
+        mean = magnitude.mean(dim=(-2, -1), keepdim=True)
+        std = magnitude.std(dim=(-2, -1), keepdim=True).clamp_min(1e-4)
+        return (magnitude - mean) / std
+
+    def forward(self, iq: torch.Tensor, meta: torch.Tensor) -> torch.Tensor:
+        time_features = self.time_encoder(iq)
+        freq_features = self.freq_encoder(self._stft_features(iq))
+        meta_features = self.meta_encoder(meta)
+        return self.classifier(torch.cat([time_features, freq_features, meta_features], dim=1))
+
+
+def build_iq_model(
+    model_type: str,
+    width: int = 64,
+    dropout: float = 0.20,
+    **kwargs: Any,
+) -> nn.Module:
+    if model_type == "time":
+        return IQCNN(width=width, dropout=dropout)
+    if model_type == "timefreq":
+        return TimeFreqIQCNN(width=width, dropout=dropout, **kwargs)
+    raise ValueError(f"Unknown model_type: {model_type}")
+
+
+def load_iq_model_from_checkpoint(checkpoint: dict[str, Any]) -> nn.Module:
+    model_name = checkpoint.get("model_name", "IQCNN")
+    model_config = dict(checkpoint["model_config"])
+    if model_name == "IQCNN":
+        return IQCNN(**model_config)
+    if model_name == "TimeFreqIQCNN":
+        return TimeFreqIQCNN(**model_config)
+    raise ValueError(f"Unknown checkpoint model_name: {model_name}")
 
 
 def predictions_from_probabilities(probabilities: np.ndarray, threshold: float) -> np.ndarray:
