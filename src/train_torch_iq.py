@@ -10,13 +10,16 @@ from torch import nn
 from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 
-from .config import OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
+from .config import CACHE_DIR, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
 from .data import load_index, stratified_split
 from .torch_iq import (
+    CachedIQDataset,
     IQCNN,
     IQDataset,
+    build_iq_tensor_cache,
     exact_match_accuracy_multihot,
     find_best_threshold,
+    iq_cache_base_path,
     macro_f1_score,
     predictions_from_probabilities,
 )
@@ -45,6 +48,10 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--no-amp", action="store_true", help="Disable mixed precision training.")
     parser.add_argument("--patience", type=int, default=8)
+    parser.add_argument("--cache-dir", type=Path, default=CACHE_DIR)
+    parser.add_argument("--no-cache", action="store_true", help="Read source .npz files directly for every batch.")
+    parser.add_argument("--rebuild-cache", action="store_true", help="Rebuild the IQ tensor cache before training.")
+    parser.add_argument("--cache-dtype", choices=["float16", "float32"], default="float16")
     return parser.parse_args()
 
 
@@ -74,14 +81,19 @@ def make_loader(
     shuffle: bool,
     num_workers: int,
     device: torch.device,
+    cache_base_path: Path | None,
 ) -> DataLoader:
-    dataset = IQDataset(root=root, rows=rows, sequence_pairs=sequence_pairs, has_labels=has_labels)
+    if cache_base_path is None:
+        dataset = IQDataset(root=root, rows=rows, sequence_pairs=sequence_pairs, has_labels=has_labels)
+    else:
+        dataset = CachedIQDataset(cache_base_path, rows=rows, has_labels=has_labels)
     return DataLoader(
         dataset,
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
         pin_memory=device.type == "cuda",
+        persistent_workers=num_workers > 0,
     )
 
 
@@ -197,6 +209,24 @@ def main() -> None:
         rows = rows[: args.max_samples]
         print(f"Using first {len(rows)} rows because --max-samples was provided.")
 
+    cache_base_path = None
+    if not args.no_cache:
+        cache_base_path = iq_cache_base_path(
+            name="train",
+            sequence_pairs=args.sequence_pairs,
+            max_samples=args.max_samples,
+            cache_dir=args.cache_dir,
+        )
+        build_iq_tensor_cache(
+            args.train_root,
+            rows,
+            sequence_pairs=args.sequence_pairs,
+            has_labels=True,
+            base_path=cache_base_path,
+            dtype=args.cache_dtype,
+            force=args.rebuild_cache,
+        )
+
     train_rows, val_rows = stratified_split(rows, val_ratio=args.val_ratio, seed=args.seed)
     train_loader = make_loader(
         args.train_root,
@@ -207,6 +237,7 @@ def main() -> None:
         shuffle=True,
         num_workers=args.num_workers,
         device=device,
+        cache_base_path=cache_base_path,
     )
     val_loader = make_loader(
         args.train_root,
@@ -217,6 +248,7 @@ def main() -> None:
         shuffle=False,
         num_workers=args.num_workers,
         device=device,
+        cache_base_path=cache_base_path,
     )
 
     model = IQCNN(width=args.width, dropout=args.dropout).to(device)
@@ -283,6 +315,12 @@ def main() -> None:
         "device": str(device),
         "gpu": torch.cuda.get_device_name(0) if device.type == "cuda" else None,
         "amp": use_amp,
+        "cache": {
+            "enabled": cache_base_path is not None,
+            "base_path": str(cache_base_path) if cache_base_path else None,
+            "dtype": args.cache_dtype if cache_base_path else None,
+            "rebuilt": bool(args.rebuild_cache) if cache_base_path else False,
+        },
         "best_validation": best_metrics,
         "history": history,
         "created_at": datetime.now(timezone.utc).isoformat(),

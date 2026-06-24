@@ -118,6 +118,23 @@ This writes:
 
 If the RTX 4060 runs out of memory, reduce `--batch-size` first, then reduce `--sequence-pairs`.
 
+By default, GPU training now builds a preprocessed IQ tensor cache under `outputs/cache/`.
+The first run spends time converting `.npz` files into cached tensors; later runs with the
+same `--sequence-pairs` and sample limit reuse that cache and avoid repeated `.npz` decompression.
+
+Useful cache options:
+
+```powershell
+# Force direct .npz reads
+D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --no-cache
+
+# Rebuild the tensor cache
+D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --sequence-pairs 65536 --rebuild-cache
+
+# Use a larger batch after cache is built
+D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --sequence-pairs 65536 --batch-size 64 --num-workers 2
+```
+
 Predict with the trained PyTorch model:
 
 ```powershell
