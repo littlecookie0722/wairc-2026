@@ -11,10 +11,10 @@ from .data import load_index
 from .submission import write_submission
 from .torch_iq import (
     CachedIQDataset,
-    IQCNN,
     IQDataset,
     build_iq_tensor_cache,
     iq_cache_base_path,
+    load_iq_model_from_checkpoint,
     predictions_from_probabilities,
 )
 from .train_torch_iq import DEFAULT_MODEL_PATH
@@ -52,7 +52,7 @@ def require_device(requested: str) -> torch.device:
 
 @torch.no_grad()
 def predict_probabilities(
-    model: IQCNN,
+    model: torch.nn.Module,
     loader: DataLoader,
     device: torch.device,
     use_amp: bool,
@@ -72,7 +72,7 @@ def main() -> None:
     args = parse_args()
     device = require_device(args.device)
     checkpoint = torch.load(args.model_path, map_location=device)
-    model = IQCNN(**checkpoint["model_config"]).to(device)
+    model = load_iq_model_from_checkpoint(checkpoint).to(device)
     model.load_state_dict(checkpoint["model_state_dict"])
     threshold = float(args.threshold if args.threshold is not None else checkpoint["threshold"])
     sequence_pairs = int(checkpoint["sequence_pairs"])

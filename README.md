@@ -135,6 +135,20 @@ D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --sequence-pair
 D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --sequence-pairs 65536 --batch-size 64 --num-workers 2
 ```
 
+The PyTorch trainer supports two model types:
+
+- `time`: the original 1D CNN over time-domain IQ samples.
+- `timefreq`: a two-branch model that combines the time-domain CNN with a GPU STFT frequency branch.
+
+Run a first time+frequency experiment:
+
+```powershell
+D:/Develop/Miniconda/envs/deepl/python.exe -m src.train_torch_iq --model-type timefreq --sequence-pairs 65536 --epochs 45 --batch-size 16 --width 32 --num-workers 2 --model-path outputs/models/iq_timefreq_w32.pt --metrics-path outputs/metrics/iq_timefreq_w32.json
+```
+
+The `timefreq` model is slower and uses more memory than `time`, so start with a smaller
+`--batch-size` and `--width`, then scale up after checking GPU memory.
+
 Predict with the trained PyTorch model:
 
 ```powershell

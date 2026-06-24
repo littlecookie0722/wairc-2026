@@ -16,6 +16,7 @@ from .torch_iq import (
     CachedIQDataset,
     IQCNN,
     IQDataset,
+    build_iq_model,
     build_iq_tensor_cache,
     exact_match_accuracy_multihot,
     find_best_threshold,
@@ -42,8 +43,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=1e-3)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--num-workers", type=int, default=0)
+    parser.add_argument("--model-type", choices=["time", "timefreq"], default="time")
     parser.add_argument("--dropout", type=float, default=0.20)
     parser.add_argument("--width", type=int, default=64)
+    parser.add_argument("--stft-n-fft", type=int, default=512)
+    parser.add_argument("--stft-hop-length", type=int, default=256)
+    parser.add_argument("--stft-max-frames", type=int, default=256)
+    parser.add_argument("--freq-bins", type=int, default=128)
     parser.add_argument("--max-samples", type=int, default=None, help="Optional smoke-test limit.")
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--no-amp", action="store_true", help="Disable mixed precision training.")
@@ -175,7 +181,7 @@ def evaluate(
 
 def save_checkpoint(
     path: Path,
-    model: IQCNN,
+    model: nn.Module,
     optimizer: torch.optim.Optimizer,
     args: argparse.Namespace,
     epoch: int,
@@ -184,7 +190,7 @@ def save_checkpoint(
     path.parent.mkdir(parents=True, exist_ok=True)
     torch.save(
         {
-            "model_name": "IQCNN",
+            "model_name": model.__class__.__name__,
             "model_config": model.config,
             "model_state_dict": model.state_dict(),
             "optimizer_state_dict": optimizer.state_dict(),
@@ -251,7 +257,20 @@ def main() -> None:
         cache_base_path=cache_base_path,
     )
 
-    model = IQCNN(width=args.width, dropout=args.dropout).to(device)
+    model_kwargs = {}
+    if args.model_type == "timefreq":
+        model_kwargs = {
+            "stft_n_fft": args.stft_n_fft,
+            "stft_hop_length": args.stft_hop_length,
+            "stft_max_frames": args.stft_max_frames,
+            "freq_bins": args.freq_bins,
+        }
+    model = build_iq_model(
+        args.model_type,
+        width=args.width,
+        dropout=args.dropout,
+        **model_kwargs,
+    ).to(device)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     loss_fn = nn.BCEWithLogitsLoss()
     scaler = GradScaler(device.type, enabled=use_amp)
@@ -264,6 +283,7 @@ def main() -> None:
     print(f"Device: {device}")
     if device.type == "cuda":
         print(f"GPU: {torch.cuda.get_device_name(0)}")
+    print(f"Model: {model.__class__.__name__}")
     print(f"Train rows: {len(train_rows)}, validation rows: {len(val_rows)}")
 
     for epoch in range(1, args.epochs + 1):
@@ -300,7 +320,9 @@ def main() -> None:
 
     args.metrics_path.parent.mkdir(parents=True, exist_ok=True)
     metrics = {
-        "model": "IQCNN",
+        "model": model.__class__.__name__,
+        "model_type": args.model_type,
+        "model_config": model.config,
         "train_root": str(args.train_root),
         "model_path": str(args.model_path),
         "random_seed": args.seed,
