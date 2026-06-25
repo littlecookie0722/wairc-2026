@@ -1,4 +1,6 @@
-# Codex Development Brief: AI + Radio Drone Identification Competition
+# Codex Development Brief: AI + Radio Drone Identification Competition（历史归档）
+
+> 注意：本文是早期 baseline 开发指导。当前项目已整理为 STFT 频谱图冲高分主线，详见 `docs/冲高分STFT频谱图方案说明.md`。早期 baseline 代码已移动到 `archived_baselines/`。
 
 ## Background
 
@@ -497,4 +499,3 @@ Implement only after the baseline is working.
 ## Cutover Rule
 
 Start implementation as soon as this document has been read once and no high-risk open questions remain. Do not create additional planning documents, review-only stages, or extra process gates before building the baseline. If a detail is ambiguous but low risk, implement with a documented assumption and continue.
-

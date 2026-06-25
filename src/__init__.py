@@ -1,2 +1,1 @@
-"""Baseline pipeline for the AI radio drone identification competition."""
-
+"""High-score STFT spectrogram pipeline for the AI radio competition."""
