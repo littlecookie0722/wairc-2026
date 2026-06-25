@@ -3,8 +3,6 @@ import random
 from collections import defaultdict
 from pathlib import Path
 
-import numpy as np
-
 from .config import NUM_CLASSES, RANDOM_SEED, VAL_RATIO
 
 
@@ -89,7 +87,7 @@ def label_to_multihot(signature: str, num_classes: int = NUM_CLASSES) -> list[in
     return multihot
 
 
-def multihot_to_signature(multihot: list[int] | np.ndarray) -> str:
+def multihot_to_signature(multihot) -> str:
     values = [int(v) for v in multihot]
     if len(values) != NUM_CLASSES:
         raise ValueError(f"Expected {NUM_CLASSES} values, got {len(values)}")
@@ -124,4 +122,3 @@ def stratified_split(
     rng.shuffle(train_rows)
     rng.shuffle(val_rows)
     return train_rows, val_rows
-

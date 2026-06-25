@@ -167,4 +167,3 @@ def cache_path(name: str, max_pairs: int = MAX_IQ_PAIRS, max_samples: int | None
     if max_samples:
         suffix += f"_n{max_samples}"
     return CACHE_DIR / f"{suffix}.npz"
-

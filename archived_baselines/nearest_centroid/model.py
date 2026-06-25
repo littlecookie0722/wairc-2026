@@ -69,4 +69,3 @@ def load_model(path: Path) -> NearestCentroidClassifier:
     if not isinstance(model, NearestCentroidClassifier):
         raise TypeError(f"Unexpected model type in {path}: {type(model)!r}")
     return model
-
