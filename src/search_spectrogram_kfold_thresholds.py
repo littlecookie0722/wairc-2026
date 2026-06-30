@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 
@@ -17,9 +18,39 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Search inference rules from spectrogram k-fold OOF predictions.")
     parser.add_argument("--save-dir", type=Path, default=DEFAULT_SAVE_DIR)
     parser.add_argument("--tags", nargs="*", default=[])
+    parser.add_argument(
+        "--tag-weights",
+        nargs="*",
+        default=[],
+        metavar="TAG=WEIGHT",
+        help="Optional architecture-level weights, for example b0=0.5 r34=0.4 convnext=0.1.",
+    )
     parser.add_argument("--include-default", action="store_true")
     parser.add_argument("--output", type=Path, default=None)
     return parser.parse_args()
+
+
+def parse_tag_weights(entries: list[str]) -> dict[str, float]:
+    weights: dict[str, float] = {}
+    for entry in entries:
+        tag, separator, raw_weight = entry.partition("=")
+        if not separator or not tag:
+            raise ValueError(f"Invalid tag weight '{entry}'; expected TAG=WEIGHT")
+        weight = float(raw_weight)
+        if weight <= 0:
+            raise ValueError(f"Weight for tag '{tag}' must be positive")
+        weights[tag] = weight
+    total = sum(weights.values())
+    return {tag: weight / total for tag, weight in weights.items()} if total else {}
+
+
+def oof_tag(path: Path) -> str:
+    match = re.fullmatch(r"oof_(.+)_fold\d+", path.stem)
+    if match:
+        return match.group(1)
+    if re.fullmatch(r"oof_fold\d+", path.stem):
+        return ""
+    raise ValueError(f"Cannot determine tag from OOF filename: {path.name}")
 
 
 def discover_oof_files(save_dir: Path, tags: list[str], include_default: bool) -> list[Path]:
@@ -58,8 +89,46 @@ def load_averaged_oof(paths: list[Path]) -> tuple[np.ndarray, np.ndarray, np.nda
     return probs_out, labels_out, sample_ids_out
 
 
+def load_weighted_oof(paths: list[Path], tag_weights: dict[str, float]) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    prob_by_index: dict[int, list[tuple[float, np.ndarray]]] = defaultdict(list)
+    label_by_index: dict[int, np.ndarray] = {}
+    sample_id_by_index: dict[int, int] = {}
+    seen_tags: set[str] = set()
+
+    for path in paths:
+        tag = oof_tag(path)
+        if tag not in tag_weights:
+            raise ValueError(f"No weight supplied for OOF tag '{tag}'")
+        seen_tags.add(tag)
+        with np.load(path, allow_pickle=False) as data:
+            probs = data["probs"].astype(np.float32)
+            labels = data["labels"].astype(np.int32)
+            indices = data["indices"].astype(np.int64)
+            sample_ids = data["sample_ids"].astype(np.int64) if "sample_ids" in data else indices
+        for local_idx, original_idx in enumerate(indices.tolist()):
+            prob_by_index[int(original_idx)].append((tag_weights[tag], probs[local_idx]))
+            label_by_index[int(original_idx)] = labels[local_idx]
+            sample_id_by_index[int(original_idx)] = int(sample_ids[local_idx])
+
+    missing_tags = set(tag_weights) - seen_tags
+    if missing_tags:
+        raise FileNotFoundError(f"No OOF files found for weighted tags: {sorted(missing_tags)}")
+
+    ordered = sorted(prob_by_index)
+    weighted_probs = []
+    for idx in ordered:
+        entries = prob_by_index[idx]
+        total_weight = sum(weight for weight, _ in entries)
+        weighted_probs.append(sum(weight * probs for weight, probs in entries) / total_weight)
+    probs_out = np.stack(weighted_probs).astype(np.float32)
+    labels_out = np.stack([label_by_index[idx] for idx in ordered]).astype(np.int32)
+    sample_ids_out = np.asarray([sample_id_by_index[idx] for idx in ordered], dtype=np.int64)
+    return probs_out, labels_out, sample_ids_out
+
+
 def main() -> None:
     args = parse_args()
+    tag_weights = parse_tag_weights(args.tag_weights)
     output = args.output or (args.save_dir / "best_rule_kfold.json")
     paths = discover_oof_files(args.save_dir, args.tags, args.include_default)
     if not paths:
@@ -69,7 +138,9 @@ def main() -> None:
     for path in paths:
         print(f"  {path}")
 
-    probs, labels, sample_ids = load_averaged_oof(paths)
+    probs, labels, sample_ids = (
+        load_weighted_oof(paths, tag_weights) if tag_weights else load_averaged_oof(paths)
+    )
     rule_payload = search_best_inference_rule(probs, labels, NUM_CLASSES)
     selected = rule_payload["selected"]
     preds = apply_inference_rule(probs, selected)
@@ -77,6 +148,7 @@ def main() -> None:
     rule_payload["oof_macro_f1"] = float(f1_score(labels, preds, average="macro", zero_division=0))
     rule_payload["num_oof_samples"] = int(len(labels))
     rule_payload["source_files"] = [str(path) for path in paths]
+    rule_payload["tag_weights"] = tag_weights
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(rule_payload, indent=2, ensure_ascii=False), encoding="utf-8")

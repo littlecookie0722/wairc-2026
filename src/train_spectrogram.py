@@ -178,6 +178,9 @@ def run_epoch(
                 logits = model(x)
                 loss = criterion(logits, labels)
 
+            if not torch.isfinite(loss):
+                raise FloatingPointError(f"Non-finite loss in {desc}: {float(loss.detach().cpu())}")
+
             if is_train:
                 if scaler is not None and scaler.is_enabled():
                     scaler.scale(loss).backward()

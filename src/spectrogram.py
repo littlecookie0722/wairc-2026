@@ -279,8 +279,7 @@ class DroneClassifier(nn.Module):
         elif arch == "convnext_tiny":
             backbone = tvm.convnext_tiny(weights="IMAGENET1K_V1" if pretrained else None)
             feat_dim = backbone.classifier[2].in_features
-            backbone.classifier = nn.Sequential(
-                nn.LayerNorm(feat_dim, eps=1e-6),
+            backbone.classifier[2] = nn.Sequential(
                 nn.Dropout(dropout),
                 nn.Linear(feat_dim, num_classes),
             )
@@ -330,32 +329,38 @@ class AsymmetricLoss(nn.Module):
         self.disable_torch_grad_focal_loss = disable_torch_grad_focal_loss
 
     def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
-        probs_pos = torch.sigmoid(logits)
-        probs_neg = 1.0 - probs_pos
-        if self.clip and self.clip > 0:
-            probs_neg = (probs_neg + self.clip).clamp(max=1.0)
+        # ASL contains logarithms close to zero, so keep this block in FP32 even
+        # when the surrounding model forward pass uses AMP.
+        with torch.autocast(device_type=logits.device.type, enabled=False):
+            logits_fp32 = logits.float()
+            targets_fp32 = targets.float()
+            probs_pos = torch.sigmoid(logits_fp32)
+            probs_neg = 1.0 - probs_pos
+            if self.clip and self.clip > 0:
+                probs_neg = (probs_neg + self.clip).clamp(max=1.0)
 
-        loss = targets * torch.log(probs_pos.clamp(min=self.eps))
-        loss = loss + (1.0 - targets) * torch.log(probs_neg.clamp(min=self.eps))
-        loss = -loss
+            loss = targets_fp32 * torch.log(probs_pos.clamp(min=self.eps))
+            loss = loss + (1.0 - targets_fp32) * torch.log(probs_neg.clamp(min=self.eps))
+            loss = -loss
 
-        if self.gamma_neg > 0 or self.gamma_pos > 0:
-            if self.disable_torch_grad_focal_loss:
-                with torch.no_grad():
-                    pt = probs_pos * (1.0 - targets) + probs_neg * targets
-                    gamma = self.gamma_pos * targets + self.gamma_neg * (1.0 - targets)
-                    weight = torch.pow(1.0 - pt, gamma)
-            else:
-                pt = probs_pos * (1.0 - targets) + probs_neg * targets
-                gamma = self.gamma_pos * targets + self.gamma_neg * (1.0 - targets)
-                weight = torch.pow(1.0 - pt, gamma)
-            loss = loss * weight
+            if self.gamma_neg > 0 or self.gamma_pos > 0:
+                def focal_weight() -> torch.Tensor:
+                    pt = probs_pos * targets_fp32 + probs_neg * (1.0 - targets_fp32)
+                    gamma = self.gamma_pos * targets_fp32 + self.gamma_neg * (1.0 - targets_fp32)
+                    return torch.pow(1.0 - pt, gamma)
 
-        if self.reduction == "sum":
-            return loss.sum()
-        if self.reduction == "none":
-            return loss
-        return loss.mean()
+                if self.disable_torch_grad_focal_loss:
+                    with torch.no_grad():
+                        weight = focal_weight()
+                else:
+                    weight = focal_weight()
+                loss = loss * weight
+
+            if self.reduction == "sum":
+                return loss.sum()
+            if self.reduction == "none":
+                return loss
+            return loss.mean()
 
 
 class BCEWithLogitsPosWeight(nn.Module):

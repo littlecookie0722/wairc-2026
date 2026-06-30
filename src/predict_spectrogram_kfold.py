@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import random
+from collections import Counter
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -26,6 +28,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--test-root", type=Path, default=TEST_ROOT)
     parser.add_argument("--save-dir", type=Path, default=DEFAULT_SAVE_DIR)
     parser.add_argument("--tags", nargs="*", default=[])
+    parser.add_argument(
+        "--tag-weights",
+        nargs="*",
+        default=[],
+        metavar="TAG=WEIGHT",
+        help="Optional architecture-level weights, for example b0=0.5 r34=0.4 convnext=0.1.",
+    )
     parser.add_argument("--include-default", action="store_true")
     parser.add_argument("--rule-path", type=Path, default=None)
     parser.add_argument("--output-path", type=Path, default=DEFAULT_OUTPUT_PATH)
@@ -33,9 +42,33 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--num-workers", type=int, default=2)
     parser.add_argument("--tta-crops", type=int, default=5)
+    parser.add_argument("--seed", type=int, default=2026)
     parser.add_argument("--device", type=str, default="cuda")
     parser.add_argument("--save-probs", type=Path, default=OUTPUT_DIR / "spectrogram_kfold" / "test_probs_kfold.npy")
     return parser.parse_args()
+
+
+def parse_tag_weights(entries: list[str]) -> dict[str, float]:
+    weights: dict[str, float] = {}
+    for entry in entries:
+        tag, separator, raw_weight = entry.partition("=")
+        if not separator or not tag:
+            raise ValueError(f"Invalid tag weight '{entry}'; expected TAG=WEIGHT")
+        weight = float(raw_weight)
+        if weight <= 0:
+            raise ValueError(f"Weight for tag '{tag}' must be positive")
+        weights[tag] = weight
+    total = sum(weights.values())
+    return {tag: weight / total for tag, weight in weights.items()} if total else {}
+
+
+def seed_inference(seed: int) -> None:
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
 
 
 def discover_model_files(save_dir: Path, tags: list[str], include_default: bool) -> list[Path]:
@@ -65,13 +98,22 @@ def cache_split_from_key(key: tuple[int, int, int, int, int]) -> str:
     return f"test_fft{n_fft}_hop{hop}_freq{target_freq}_target{target_time}_time{cache_time}"
 
 
-def group_model_paths(paths: list[Path]) -> dict[tuple[int, int, int, int, int], list[Path]]:
+def inspect_model_paths(
+    paths: list[Path],
+) -> tuple[dict[tuple[int, int, int, int, int], list[Path]], dict[Path, str]]:
     groups: dict[tuple[int, int, int, int, int], list[Path]] = defaultdict(list)
+    tags: dict[Path, str] = {}
     for path in paths:
         checkpoint = torch.load(path, map_location="cpu")
         groups[stft_key(checkpoint)].append(path)
+        tags[path] = str(checkpoint.get("tag", ""))
         del checkpoint
-    return dict(groups)
+    return dict(groups), tags
+
+
+def group_model_paths(paths: list[Path]) -> dict[tuple[int, int, int, int, int], list[Path]]:
+    groups, _ = inspect_model_paths(paths)
+    return groups
 
 
 @torch.no_grad()
@@ -134,6 +176,8 @@ def make_loader_for_key(args: argparse.Namespace, df: pd.DataFrame, key: tuple[i
 
 def main() -> None:
     args = parse_args()
+    seed_inference(args.seed)
+    tag_weights = parse_tag_weights(args.tag_weights)
     if args.device == "cuda" and not torch.cuda.is_available():
         args.device = "cpu"
     device = torch.device(args.device)
@@ -147,10 +191,24 @@ def main() -> None:
         print(f"  {path}")
 
     df = pd.read_csv(args.test_root / "index.csv")
-    groups = group_model_paths(model_paths)
+    groups, model_tags = inspect_model_paths(model_paths)
+    model_counts_by_tag = Counter(model_tags.values())
+    if tag_weights:
+        selected_tags = set(model_counts_by_tag)
+        if selected_tags != set(tag_weights):
+            raise ValueError(
+                f"Selected model tags {sorted(selected_tags)} do not match weighted tags {sorted(tag_weights)}"
+            )
+        model_weights = {
+            path: tag_weights[tag] / model_counts_by_tag[tag]
+            for path, tag in model_tags.items()
+        }
+    else:
+        model_weights = {path: 1.0 / len(model_paths) for path in model_paths}
     total_probs: np.ndarray | None = None
     reference_ids: list[int] | None = None
     model_count = 0
+    total_weight = 0.0
 
     for key, paths in groups.items():
         print(f"\nSTFT group {key}: {len(paths)} model(s)")
@@ -162,13 +220,15 @@ def main() -> None:
                 reference_ids = sample_ids
             elif sample_ids != reference_ids:
                 raise RuntimeError(f"Sample order mismatch while predicting {path}")
-            total_probs += probs
+            model_weight = model_weights[path]
+            total_probs += probs * model_weight
+            total_weight += model_weight
             model_count += 1
 
     if total_probs is None or reference_ids is None or model_count == 0:
         raise RuntimeError("No probabilities were produced")
 
-    probs = total_probs / float(model_count)
+    probs = total_probs / total_weight
     rule_path = args.rule_path or (args.save_dir / "best_rule_kfold.json")
     rule = load_inference_rule(rule_path, NUM_CLASSES)
     preds = apply_inference_rule(probs, rule).astype(int)
@@ -184,6 +244,7 @@ def main() -> None:
     sums = preds.sum(axis=1)
     print(f"\nWrote submission: {path}")
     print(f"Averaged models: {model_count}")
+    print(f"Tag weights: {tag_weights or 'equal per model'}")
     print(f"Used rule: {rule}")
     print(f"Prediction counts: single={(sums == 1).sum()} double={(sums == 2).sum()} other={((sums == 0) | (sums > 2)).sum()}")
 
