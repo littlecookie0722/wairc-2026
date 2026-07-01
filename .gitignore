@@ -1,7 +1,10 @@
 __pycache__/
 *.py[cod]
 .venv/
-outputs/
+outputs/cache
+outputs/metrics
+outputs/models
+outputs/spectrogram_kfold
 data_and_code/
 data_and_code_patch-1/
 
