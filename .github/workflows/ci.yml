@@ -30,7 +30,8 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
           python -m pip install -r requirements.txt
-          python -m pip install pytest ruff
+          python -m pip install build pytest ruff
+          python -m pip install --no-deps -e .
 
       - name: Lint
         run: ruff check src tests scripts
@@ -40,3 +41,9 @@ jobs:
 
       - name: Smoke test
         run: python scripts/smoke_test.py
+
+      - name: Synthetic end-to-end demo
+        run: wairc demo --train-samples-per-class 2
+
+      - name: Build distributions
+        run: python -m build

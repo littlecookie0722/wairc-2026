@@ -1,3 +1,48 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wairc-rf"
+version = "0.1.0"
+description = "Reproducible multi-node RF IQ classification pipeline"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "littlecookie0722" }]
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "joblib>=1.3",
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "scikit-learn>=1.3",
+    "scipy>=1.11",
+    "torch",
+    "torchvision",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
+
+[project.scripts]
+wairc = "src.cli:main"
+
+[project.urls]
+Repository = "https://github.com/littlecookie0722/wairc-2026"
+Issues = "https://github.com/littlecookie0722/wairc-2026/issues"
+
+[tool.setuptools]
+packages = ["src"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
@@ -10,4 +55,3 @@ exclude = ["archived_baselines", "outputs", ".venv"]
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 ignore = ["E501"]
-

@@ -18,6 +18,16 @@ flowchart LR
     I --> J["Submission writer and validator"]
 ```
 
+The data-free demonstration follows a smaller public path:
+
+```mermaid
+flowchart LR
+    A["Synthetic multi-node IQ"] --> B["Existing STFT transformation"]
+    B --> C["Compact spectral features"]
+    C --> D["CPU multi-label classifier"]
+    D --> E["Submission writer and validator"]
+```
+
 ## Module boundaries
 
 | Module | Current responsibility | Compatibility boundary |
@@ -31,6 +41,8 @@ flowchart LR
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
+| src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
+| src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
 
 ## Main workflows
@@ -66,13 +78,14 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
 
 - Core STFT, dataset, model, training, and inference logic still lives in a
   small set of script-oriented modules.
-- There is no unified configuration file or package-level CLI.
+- There is no unified experiment configuration file; the CLI currently
+  dispatches to the existing script arguments.
 - Training outputs include configuration, history, checkpoints, and rules,
   but do not yet capture a complete environment and Git provenance manifest.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
-- The repository has no declared software license yet.
+- Competition data and trained checkpoints are outside the repository's MIT
+  software license and require separate access and terms.
 
 These gaps are tracked as follow-up work rather than being hidden by a new
 directory layout.
-
