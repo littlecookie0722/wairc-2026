@@ -1,120 +1,130 @@
-# AI 无线电无人机识别冲高分版本
+# WAIRC-2026
 
-当前主线已经整理为：
+A public, competition-originated deep-learning pipeline for RF drone
+identification from multi-node IQ signals, being prepared for open-source
+release.
 
-```text
-STFT 频谱图 + ImageNet 预训练图像模型 + k-fold ensemble
-```
+This repository documents a real 2026 AI radio competition project. The main
+pipeline converts raw interleaved IQ samples into STFT spectrograms and uses
+pretrained computer-vision backbones, k-fold training, out-of-fold threshold
+search, ensemble inference, and submission validation.
 
-早期的手工特征 baseline 和原始 IQ CNN 已归档到：
+The project is maintained as a reproducible research codebase. It does not
+claim production adoption, download volume, leaderboard results, or community
+size that are not backed by repository evidence.
 
-```text
-archived_baselines/
-```
+## Pipeline
 
-后续默认不再使用归档模型，除非需要回看历史实验。
+Raw IQ NPZ -> STFT spectrogram -> pretrained vision backbone ->
+multi-label probabilities -> k-fold OOF threshold search ->
+ensemble inference -> 9-value submission
 
-## 数据目录
+## Current capabilities
 
-训练集，有标签：
+- Three-node IQ loading with missing-node handling.
+- STFT spectrogram generation, resizing, caching, and SpecAugment.
+- ResNet, EfficientNet, ConvNeXt, and DenseNet classifier options.
+- Single-model and five-fold training entry points.
+- OOF threshold/rule search and weighted model ensemble.
+- Public-test prediction and strict submission-format validation.
+- Archived early baselines under archived_baselines.
 
-```text
-data_and_code/ai_radio_2026_qualifying_release/train/
-```
+The current public repository is intentionally still a competition-oriented
+research project. Engineering work is being added incrementally; see the
+architecture and reproducibility documents for current limitations.
 
-公开测试集，无标签：
+## Quick start
 
-```text
-data_and_code_patch-1/test_public_v1.1/
-```
+### Install
 
-提交文件必须是 9 维 multi-hot 文本格式，提交前务必运行校验脚本。
+    python -m pip install -r requirements.txt
+    python -m pip install -r requirements-gpu.txt
+    python -m pip install -r requirements-dev.txt
 
-## 安装依赖
+The GPU requirements use the CUDA 12.8 PyTorch index. For a CPU-only
+environment, install a compatible CPU build of torch and torchvision instead.
 
-CPU/通用依赖：
+### Verify without competition data
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-```
+    python -m pytest
+    python scripts/smoke_test.py
 
-GPU/PyTorch 依赖：
+The tests and smoke test use synthetic inputs and do not require the
+competition dataset, checkpoints, CUDA, or external credentials. A local
+environment still needs torch, torchvision, NumPy, SciPy, pandas,
+scikit-learn, and tqdm installed.
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-gpu.txt
-```
+### Train the main five-fold pipeline
 
-如果你使用的是 PyCharm/Conda 解释器，请把 `.\.venv\Scripts\python.exe` 换成你的解释器路径，例如：
+Place the labeled training set at:
 
-```powershell
-D:/Develop/Miniconda/envs/deepl/python.exe
-```
+    data_and_code/ai_radio_2026_qualifying_release/train/
 
-## 推荐冲分流程
+Then run:
 
-先跑一组 ResNet34 五折：
+    python -m src.train_spectrogram_kfold --tag r34 --arch resnet34 --epochs 40 --batch-size 16 --num-workers 2
+    python -m src.search_spectrogram_kfold_thresholds --tags r34
+    python -m src.predict_spectrogram_kfold --tags r34
+    python -m src.validate_submission outputs/submissions/submission_spectrogram_kfold.txt
 
-```powershell
-.\.venv\Scripts\python.exe -m src.train_spectrogram_kfold --tag r34 --arch resnet34 --epochs 40 --batch-size 16 --num-workers 2
-```
+Omit --fold to train all five folds. The public test set is unlabeled, so its
+score cannot be calculated locally.
 
-说明：不传 `--fold` 时，脚本会顺序训练全部 5 折。
+### Optional model groups
 
-搜索 OOF 最优推理规则：
+    python -m src.train_spectrogram_kfold --tag b0 --arch efficientnet_b0 --epochs 40 --batch-size 24 --num-workers 2
+    python -m src.train_spectrogram_kfold --tag cnx --arch convnext_tiny --epochs 40 --batch-size 12 --num-workers 2
+    python -m src.search_spectrogram_kfold_thresholds --tags r34 b0 cnx
+    python -m src.predict_spectrogram_kfold --tags r34 b0 cnx
+    python -m src.validate_submission outputs/submissions/submission_spectrogram_kfold.txt
 
-```powershell
-.\.venv\Scripts\python.exe -m src.search_spectrogram_kfold_thresholds --tags r34
-```
+For a smaller environment check:
 
-生成公开测试集提交：
+    python -m src.train_spectrogram --epochs 3 --batch-size 8 --num-workers 0 --max-samples 300
 
-```powershell
-.\.venv\Scripts\python.exe -m src.predict_spectrogram_kfold --tags r34
-```
+## Data and licensing boundary
 
-校验提交格式：
+The competition dataset is not redistributed by this repository. Obtain it
+through the original competition channel and follow its rules and licensing
+terms. Do not commit raw data, checkpoints, caches, or private test labels.
 
-```powershell
-.\.venv\Scripts\python.exe -m src.validate_submission outputs/submissions/submission_spectrogram_kfold.txt
-```
+The repository currently has no declared software license. Public visibility
+does not by itself grant permission to reuse the code. The maintainer must
+confirm the license choice before a LICENSE file is added.
 
-## 多模型融合
+## Project structure
 
-训练 EfficientNet-B0 五折：
+    src/config.py
+    src/data.py
+    src/spectrogram.py
+    src/train_spectrogram.py
+    src/train_spectrogram_kfold.py
+    src/search_spectrogram_kfold_thresholds.py
+    src/predict_spectrogram_kfold.py
+    src/submission.py
+    src/validate_submission.py
+    tests/
+    scripts/smoke_test.py
+    docs/architecture.md
+    docs/reproducibility.md
+    archived_baselines/
 
-```powershell
-.\.venv\Scripts\python.exe -m src.train_spectrogram_kfold --tag b0 --arch efficientnet_b0 --epochs 40 --batch-size 24 --num-workers 2
-```
+## Documentation
 
-训练 ConvNeXt-Tiny 五折：
+- docs/冲高分STFT频谱图方案说明.md: current competition workflow.
+- docs/数据集说明.md and docs/Dataset_Guide_EN.md: dataset and submission format.
+- docs/architecture.md: current module and data-flow boundaries.
+- docs/reproducibility.md: reproducibility limits and required records.
 
-```powershell
-.\.venv\Scripts\python.exe -m src.train_spectrogram_kfold --tag cnx --arch convnext_tiny --epochs 40 --batch-size 12 --num-workers 2
-```
+## Contributing
 
-融合多组五折模型：
+Read CONTRIBUTING.md and AGENTS.md before changing the pipeline. Changes to
+STFT parameters, label mapping, checkpoint metadata, fold splitting,
+threshold rules, ensemble weights, or submission format require regression
+tests and an explicit compatibility note.
 
-```powershell
-.\.venv\Scripts\python.exe -m src.search_spectrogram_kfold_thresholds --tags r34 b0 cnx
-.\.venv\Scripts\python.exe -m src.predict_spectrogram_kfold --tags r34 b0 cnx
-.\.venv\Scripts\python.exe -m src.validate_submission outputs/submissions/submission_spectrogram_kfold.txt
-```
+## Security and privacy
 
-## 单模型试跑
-
-如果只是想先确认环境、缓存和显存是否正常，可以跑单模型：
-
-```powershell
-.\.venv\Scripts\python.exe -m src.train_spectrogram --epochs 3 --batch-size 8 --num-workers 0 --max-samples 300
-```
-
-正式冲分仍建议使用 `src.train_spectrogram_kfold`。
-
-## 详细说明
-
-完整中文说明见：
-
-```text
-docs/冲高分STFT频谱图方案说明.md
-```
-
+Do not put API keys, account or organization identifiers, email addresses,
+private dataset links, or credentials in the repository. See SECURITY.md for
+reporting guidance.

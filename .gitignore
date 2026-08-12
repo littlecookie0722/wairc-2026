@@ -5,6 +5,11 @@ outputs/cache
 outputs/metrics
 outputs/models
 outputs/spectrogram_kfold
+outputs/spectrogram/
+outputs/runs/
 data_and_code/
 data_and_code_patch-1/
-
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

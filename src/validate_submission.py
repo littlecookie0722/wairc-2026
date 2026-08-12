@@ -57,7 +57,7 @@ def validate_submission(path: Path, test_root: Path, allow_partial: bool = False
         if len(values) != NUM_CLASSES:
             errors.append(f"Line {line_no}: expected {NUM_CLASSES} values, got {len(values)}")
         for value in values:
-            if not isinstance(value, int) or value not in (0, 1):
+            if isinstance(value, bool) or not isinstance(value, int) or value not in (0, 1):
                 errors.append(f"Line {line_no}: prediction values must be integer 0 or 1")
                 break
 
@@ -84,4 +84,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
