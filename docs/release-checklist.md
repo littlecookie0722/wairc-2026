@@ -22,7 +22,8 @@ Use this checklist before publishing the first versioned release.
 
 - [x] Update `CHANGELOG.md` with the release date and verified changes.
 - [x] Confirm the version in `pyproject.toml` and `src/__init__.py`.
-- [ ] Confirm CI passes on the release commit.
+- [x] Confirm CI passes on release-candidate commit `007ac2f` (GitHub Actions
+  CI run 31568590301).
 - [ ] Create an annotated Git tag from a clean, reviewed commit.
 - [ ] Publish release notes that distinguish synthetic checks from real-data
   or competition results.
