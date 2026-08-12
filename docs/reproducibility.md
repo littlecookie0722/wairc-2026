@@ -45,6 +45,12 @@ Data-free checks:
     python -m pytest
     python scripts/smoke_test.py
     ruff check src tests scripts
+    wairc demo
+
+The synthetic demo writes its generated IQ data, fitted lightweight model,
+metrics, and validated submission under `outputs/demo/`. Its exact-match value
+only checks deterministic synthetic separability and must not be reported as a
+real-data benchmark or competition result.
 
 Data-backed checks:
 
@@ -63,4 +69,3 @@ Before changing STFT, labels, fold splitting, thresholds, ensemble weighting,
 checkpoint metadata, or submission serialization, compare the old and new
 behavior on the same synthetic or saved input. Record shape, dtype, maximum
 absolute difference where meaningful, and the resulting submission diff.
-

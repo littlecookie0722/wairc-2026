@@ -36,3 +36,9 @@ New experiments should record their configuration, seed, model tag, data
 assumptions, and metrics. Do not present a local validation result as a public
 test or official competition result.
 
+## Contribution license
+
+By submitting a contribution, you agree that it may be distributed under the
+MIT License used by this repository. Do not contribute competition data,
+model weights, copied code, or other material that you do not have permission
+to distribute.

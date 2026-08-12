@@ -1,6 +1,12 @@
 __pycache__/
 *.py[cod]
 .venv/
+.idea/
+*.egg-info/
+build/
+dist/
+outputs/
+docs/submission*.txt
 outputs/cache
 outputs/metrics
 outputs/models
