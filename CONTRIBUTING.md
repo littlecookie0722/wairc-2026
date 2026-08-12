@@ -5,10 +5,15 @@ competition pipeline understandable and behaviorally stable.
 
 ## Development setup
 
-Install the runtime requirements, a compatible torch/torchvision build, and
-the development tools:
+For a CPU development environment, install a compatible CPU build of
+torch/torchvision, followed by the project and development tools:
 
-    python -m pip install -r requirements.txt
+    python -m pip install --index-url https://download.pytorch.org/whl/cpu torch torchvision
+    python -m pip install -e ".[dev]"
+
+GPU development is optional. When CUDA 12.8 is available, the existing
+requirements-file workflow remains supported:
+
     python -m pip install -r requirements-gpu.txt
     python -m pip install -r requirements-dev.txt
 
@@ -16,7 +21,7 @@ the development tools:
 
     python -m pytest
     python scripts/smoke_test.py
-    ruff check src tests scripts
+    ruff check src wairc_rf tests scripts
 
 If the change affects training, run the smallest available data-backed check
 and report the command, data assumptions, device, and result. Do not upload

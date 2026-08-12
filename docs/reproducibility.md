@@ -44,7 +44,7 @@ Data-free checks:
 
     python -m pytest
     python scripts/smoke_test.py
-    ruff check src tests scripts
+    ruff check src wairc_rf tests scripts
     wairc demo
 
 The synthetic demo writes its generated IQ data, fitted lightweight model,

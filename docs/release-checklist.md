@@ -1,6 +1,9 @@
 # Release Checklist
 
-Use this checklist before publishing the first versioned release.
+This document records the v0.1.0 release state and provides a baseline for
+future releases. WAIRC-2026 v0.1.0 was published on 2026-08-12; unchecked items
+below are explicit post-release follow-up work, not claims that the release is
+still pending.
 
 ## Maintainer decisions
 
@@ -11,9 +14,12 @@ Use this checklist before publishing the first versioned release.
 
 ## Verification
 
-- [ ] Install the project in a clean environment with `pip install -e .`.
+- [ ] Install the built wheel in a clean environment with runtime dependencies,
+  then run `wairc --version`, `wairc --help`, `wairc demo`, and `pip check`.
+  This clean-wheel verification remains pending after v0.1.0.
 - [x] Run `python -m pytest`.
-- [x] Run `ruff check src tests scripts`.
+- [x] Run `ruff check src tests scripts` for v0.1.0. Future releases also
+  include the stable `wairc_rf` package in this check.
 - [x] Run `python scripts/smoke_test.py`.
 - [x] Run `wairc demo` and validate its generated submission.
 - [x] Build the source and wheel distributions and inspect their contents.
@@ -25,7 +31,8 @@ Use this checklist before publishing the first versioned release.
 - [x] Confirm CI passes on release-candidate commit `007ac2f` (GitHub Actions
   CI run 31568590301).
 - [x] Create and push annotated tag `v0.1.0` for commit `12f70ff`.
-- [ ] Publish release notes that distinguish synthetic checks from real-data
-  or competition results.
+- [x] Publish [v0.1.0 release notes](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0)
+  that distinguish synthetic checks from real-data or competition results.
 
-Do not publish a release until every maintainer-decision item is complete.
+For future releases, complete every maintainer-decision item and document any
+remaining verification gap before publishing.

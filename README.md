@@ -1,5 +1,9 @@
 # WAIRC-2026
 
+[![CI](https://github.com/littlecookie0722/wairc-2026/actions/workflows/ci.yml/badge.svg)](https://github.com/littlecookie0722/wairc-2026/actions/workflows/ci.yml)
+[![GitHub release](https://img.shields.io/github/v/release/littlecookie0722/wairc-2026)](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 A public research implementation of multi-node RF drone identification from
 IQ signals, originating from a 2026 AI radio competition.
 
@@ -11,6 +15,8 @@ search, ensemble inference, and submission validation.
 The project is maintained as a reproducible research codebase. It does not
 claim production adoption, download volume, leaderboard results, or community
 size that are not backed by repository evidence.
+
+The latest public release is [v0.1.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0).
 
 ## Pipeline
 
@@ -62,13 +68,40 @@ IQ samples, extracts STFT features, trains a lightweight multi-label
 classifier, runs inference, writes a submission, and validates it. Artifacts
 are written under `outputs/demo/`.
 
+Example output from a verified default run (paths abbreviated):
+
+```text
+Synthetic CPU demo passed
+Train samples: 45
+Test samples: 14
+Synthetic exact-match accuracy: 0.786
+Submission: <output-dir>/submission.txt
+Metrics: <output-dir>/metrics.json
+```
+
 The reported synthetic exact-match accuracy is only a functional check of the
 workflow. It is not a competition score or evidence of performance on real RF
-data.
+data, and it may vary if the seed or dependency versions change.
 
 List the unified commands with:
 
     wairc --help
+
+Reusable transforms and label helpers are available from the stable Python
+namespace:
+
+```python
+import numpy as np
+
+from wairc_rf import STFTConfig, iq_to_spectrogram
+
+interleaved_iq = np.fromfile("recording.int16", dtype=np.int16)
+config = STFTConfig(n_fft=512, hop=128, target_freq=257)
+spectrogram = iq_to_spectrogram(interleaved_iq, sample_rate=125_000_000, config=config)
+```
+
+See the [public Python API](docs/public-api.md) for the `stft-v1` compatibility
+contract and input requirements.
 
 ### Verify without competition data
 
@@ -141,13 +174,18 @@ original terms.
 
 ## Documentation
 
-- docs/冲高分STFT频谱图方案说明.md: current competition workflow.
-- docs/数据集说明.md and docs/Dataset_Guide_EN.md: dataset and submission format.
-- docs/architecture.md: current module and data-flow boundaries.
-- docs/reproducibility.md: reproducibility limits and required records.
-- docs/release-checklist.md: conditions for the first versioned release.
-- docs/releases/v0.1.0.md: release-candidate notes for the first version.
-- ROADMAP.md: planned interoperability and reproducibility work.
+- [Current STFT competition workflow](docs/冲高分STFT频谱图方案说明.md).
+- Dataset and submission format: [Chinese](docs/数据集说明.md) and
+  [English](docs/Dataset_Guide_EN.md).
+- [Architecture](docs/architecture.md): current module and data-flow boundaries.
+- [Public Python API](docs/public-api.md): stable imports and the versioned
+  `stft-v1` transform contract.
+- [Reproducibility](docs/reproducibility.md): current limits and required records.
+- [Release checklist](docs/release-checklist.md): the v0.1.0 release record and
+  remaining post-release verification.
+- [v0.1.0 release notes](docs/releases/v0.1.0.md).
+- [Roadmap](ROADMAP.md): released foundations and planned interoperability work.
+- [Citation metadata](CITATION.cff).
 
 ## License
 
@@ -161,6 +199,9 @@ Read CONTRIBUTING.md and AGENTS.md before changing the pipeline. Changes to
 STFT parameters, label mapping, checkpoint metadata, fold splitting,
 threshold rules, ensemble weights, or submission format require regression
 tests and an explicit compatibility note.
+
+For usage questions, troubleshooting, and guidance on where to ask for help,
+see [SUPPORT.md](SUPPORT.md).
 
 ## Security and privacy
 

@@ -3,6 +3,7 @@ name: Bug report
 about: Report a reproducible defect in the pipeline
 title: "[Bug] "
 labels: bug
+assignees: ""
 ---
 
 ## What happened?
