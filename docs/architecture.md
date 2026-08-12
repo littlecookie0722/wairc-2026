@@ -1,7 +1,9 @@
 # WAIRC-2026 Architecture
 
 This document describes the current repository as implemented. It is not a
-claim that the project already has the future package layout or a unified CLI.
+claim that the project already has the future package layout. The installed
+`wairc` command is a unified dispatch layer over the existing module entry
+points; those `python -m src.<module>` entry points remain supported.
 
 ## Data flow
 
@@ -44,6 +46,7 @@ flowchart LR
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
+| wairc_rf/ | Stable public transform and label imports over compatible legacy implementations | `stft-v1` behavior and documented public signatures |
 
 ## Main workflows
 

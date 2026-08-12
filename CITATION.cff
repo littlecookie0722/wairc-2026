@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using the metadata in this file."
+title: "WAIRC-2026"
+type: software
+authors:
+  - name: "littlecookie0722"
+    website: "https://github.com/littlecookie0722"
+version: "0.1.0"
+date-released: "2026-08-12"
+repository-code: "https://github.com/littlecookie0722/wairc-2026"
+url: "https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0"
+license: MIT
+keywords:
+  - radio frequency
+  - IQ samples
+  - signal processing
+  - STFT
+  - multi-label classification
+  - reproducible research

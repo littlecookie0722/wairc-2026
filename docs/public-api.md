@@ -1,0 +1,79 @@
+# Public Python API
+
+The `wairc_rf` package is the stable import surface for reusable project
+utilities. Existing `src.*` module entry points remain supported for backward
+compatibility while implementation details are migrated incrementally.
+
+## Stable symbols
+
+| Symbol | Stable signature and defaults |
+| --- | --- |
+| `STFTConfig` | `profile="stft-v1", n_fft=512, hop=128, target_freq=None, target_time=None` |
+| `iq_to_spectrogram` | `(interleaved_iq, sample_rate, config=None)` |
+| `parse_label_signature` | `(signature, num_classes=9)` |
+| `normalize_label_signature` | `(signature, num_classes=9)` |
+| `label_to_multihot` | `(signature, num_classes=9)` |
+| `multihot_to_signature` | `(multihot, num_classes=9)` |
+
+## STFT profile v1
+
+```python
+import numpy as np
+
+from wairc_rf import STFTConfig, iq_to_spectrogram
+
+raw_iq = np.fromfile("recording.int16", dtype=np.int16)
+config = STFTConfig(
+    profile="stft-v1",
+    n_fft=512,
+    hop=128,
+    target_freq=257,
+    target_time=1536,
+)
+spectrogram = iq_to_spectrogram(raw_iq, sample_rate=125_000_000, config=config)
+```
+
+`stft-v1` names the released transform behavior:
+
+1. interpret a one-dimensional array as interleaved `I,Q,I,Q,...` samples;
+2. convert to complex float values and remove the complex mean;
+3. compute SciPy STFT with no boundary extension or padding;
+4. use standardized `log1p(abs(STFT))` magnitude;
+5. optionally resize frequency and time axes with linear interpolation;
+6. return `float32`, or `None` when the input is shorter than one FFT window.
+
+The IQ input must be a one-dimensional, even-length array of real numeric
+values. `sample_rate` must be a finite positive real number. `STFTConfig()`
+leaves both target axes as `None`; for complex IQ this preserves the native
+two-sided STFT frequency dimension instead of forcing the competition's 257
+bins, and the native time dimension depends on input length.
+
+The profile does not include training-time crop sampling, SpecAugment, cache
+layout, label mapping, or inference rules. Those remain separate compatibility
+boundaries. The competition dataset currently requests 257 frequency bins and
+a 1536-frame cache tensor before selecting a 768-frame training or evaluation
+crop; generic users should choose output sizes for their own data.
+
+The public implementation delegates valid inputs to the legacy transform and
+has both an exact delegate-equality test and an independent frozen-output
+regression. Introducing phase channels, alternative normalization, or
+frequency-axis alignment requires a new profile instead of a silent change to
+`stft-v1`.
+
+## Labels
+
+The package also exposes validated helpers for pipe-delimited label signatures:
+
+```python
+from wairc_rf import label_to_multihot, multihot_to_signature, normalize_label_signature
+
+assert normalize_label_signature("2|0", num_classes=4) == "0|2"
+assert label_to_multihot("2|0", num_classes=4) == [1, 0, 1, 0]
+assert multihot_to_signature([1, 0, 1, 0], num_classes=4) == "0|2"
+```
+
+These helpers reject empty, duplicate, non-integer, and out-of-range labels,
+as well as non-binary multi-hot values and an all-zero multi-hot vector.
+Multi-hot vectors may use integer `0`/`1` or Boolean values.
+The default class count remains the competition contract; pass `num_classes`
+explicitly for a different public dataset.

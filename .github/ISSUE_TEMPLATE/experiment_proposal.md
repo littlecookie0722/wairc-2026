@@ -3,6 +3,7 @@ name: Experiment proposal
 about: Propose a reproducible model or preprocessing experiment
 title: "[Experiment] "
 labels: experiment
+assignees: ""
 ---
 
 ## Hypothesis

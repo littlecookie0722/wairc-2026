@@ -44,8 +44,8 @@ Run the narrowest relevant checks first:
 
     python -m pytest
     python scripts/smoke_test.py
-    ruff check src tests scripts
-    python -m compileall -q src archived_baselines
+    ruff check src wairc_rf tests scripts
+    python -m compileall -q src wairc_rf archived_baselines
 
 GPU training and full-dataset inference are manual checks. They are not
 required for the CPU test suite or GitHub Actions.

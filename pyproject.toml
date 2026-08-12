@@ -8,6 +8,14 @@ version = "0.1.0"
 description = "Reproducible multi-node RF IQ classification pipeline"
 readme = "README.md"
 requires-python = ">=3.10"
+keywords = [
+    "rf",
+    "iq-samples",
+    "signal-processing",
+    "stft",
+    "pytorch",
+    "multilabel-classification",
+]
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "littlecookie0722" }]
@@ -37,18 +45,21 @@ dev = ["build>=1.2", "pytest>=8.0", "ruff>=0.6"]
 wairc = "src.cli:main"
 
 [project.urls]
+Homepage = "https://github.com/littlecookie0722/wairc-2026"
+Documentation = "https://github.com/littlecookie0722/wairc-2026/tree/master/docs"
 Repository = "https://github.com/littlecookie0722/wairc-2026"
 Issues = "https://github.com/littlecookie0722/wairc-2026/issues"
+Changelog = "https://github.com/littlecookie0722/wairc-2026/blob/master/CHANGELOG.md"
 
 [tool.setuptools]
-packages = ["src"]
+packages = ["src", "wairc_rf"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
 
 [tool.ruff]
-target-version = "py312"
+target-version = "py310"
 line-length = 120
 exclude = ["archived_baselines", "outputs", ".venv"]
 
