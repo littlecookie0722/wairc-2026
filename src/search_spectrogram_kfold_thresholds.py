@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from sklearn.metrics import f1_score
 
-from .config import NUM_CLASSES, OUTPUT_DIR
+from .config import NUM_CLASSES
 from .spectrogram import apply_inference_rule, search_best_inference_rule
 from .train_spectrogram_kfold import DEFAULT_SAVE_DIR
 
