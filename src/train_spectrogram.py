@@ -20,6 +20,7 @@ from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT,
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
 from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
+from .rule_artifact import make_rule_payload, write_rule_artifact
 from .spectrogram import (
     DroneClassifier,
     DroneSpectrogramDataset,
@@ -348,7 +349,12 @@ def main() -> None:
             raise RuntimeError("Training finished without a best checkpoint")
 
         rule_payload = search_best_inference_rule(best_probs.astype(np.float32), best_labels.astype(np.int32), NUM_CLASSES)
-        (args.save_dir / "best_rule.json").write_text(json.dumps(rule_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        rule_payload = make_rule_payload(
+            rule_payload["selected"],
+            candidates=rule_payload.get("candidates"),
+            num_classes=NUM_CLASSES,
+        )
+        write_rule_artifact(args.save_dir / "best_rule.json", rule_payload)
         selected_rule = rule_payload["selected"]
         print(
             f"Best inference rule: {selected_rule['method']} "

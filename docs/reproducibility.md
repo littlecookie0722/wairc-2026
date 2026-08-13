@@ -62,6 +62,13 @@ unversioned files, validates both formats, and rejects shape/range errors or
 conflicting labels and sample IDs for the same original row. It does not alter
 the existing average or tag-weighted probability formulas.
 
+Rule files written by training and OOF search use `rule-v1`. They retain the
+selected rule and candidate list, record the nine-class contract, and support
+the existing `per_class_thresholds` and `top2_second_threshold` methods. The
+shared reader accepts the prior top-level rule shapes and missing-file default,
+validates thresholds before prediction, and strips local directory components
+from recorded OOF source filenames.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.
