@@ -42,7 +42,8 @@ flowchart LR
 | src/run_manifest.py | Sanitized `run-manifest-v1` provenance records for training runs | manifest schema and privacy boundary |
 | src/checkpoint.py | Versioned model checkpoint metadata and legacy-compatible loading | `checkpoint-v1` fields and loader validation |
 | src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
-| src/search_spectrogram_kfold_thresholds.py | Average or weighted OOF probabilities and select an inference rule | OOF file schema and weight semantics |
+| src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
+| src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities and select an inference rule | OOF schema and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
@@ -62,8 +63,10 @@ from the best validation probabilities.
 
 The k-fold entry point uses StratifiedKFold when possible and falls back to
 KFold when class-combination counts are too small. Each fold writes a
-checkpoint, history JSON, and OOF NPZ containing probabilities, labels,
-original row indices, sample IDs, fold, and the selected metric.
+checkpoint, history JSON, and `oof-v1` NPZ containing probabilities, labels,
+original row indices, sample IDs, fold, and the selected metric. The reader
+also accepts older unversioned OOF files and validates shapes, ranges, unique
+row identities, and cross-file label/sample-ID consistency.
 
 ### Rule search and ensemble inference
 
@@ -88,9 +91,9 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   dispatches to the existing script arguments.
 - Training outputs now include a sanitized `run-manifest-v1` record with
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
-  and model checkpoints carrying the `checkpoint-v1` metadata envelope.
-  Richer artifact linkage and unified OOF/rule/cache schemas remain follow-up
-  work.
+  model checkpoints carrying the `checkpoint-v1` metadata envelope, and
+  per-fold `oof-v1` artifacts. Unified rule/cache schemas and richer linkage
+  remain follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT
