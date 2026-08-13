@@ -16,6 +16,7 @@ from torch.amp import GradScaler
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
+from .oof_artifact import write_oof_artifact
 from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
@@ -175,14 +176,14 @@ def train_fold(args: argparse.Namespace, df: pd.DataFrame, train_idx: np.ndarray
     if best_probs is None or best_labels is None:
         raise RuntimeError(f"Fold {fold} did not produce a checkpoint")
 
-    np.savez(
+    write_oof_artifact(
         oof_path,
-        probs=best_probs.astype(np.float16),
-        labels=best_labels.astype(np.int8),
-        indices=val_idx.astype(np.int32),
-        fold=np.asarray(fold, dtype=np.int32),
+        probs=best_probs,
+        labels=best_labels,
+        indices=val_idx,
+        fold=fold,
         sample_ids=df.iloc[val_idx]["sample_id"].to_numpy(dtype=np.int64),
-        metrics=np.asarray([best_metric], dtype=np.float32),
+        metric=best_metric,
     )
     metrics = prediction_metrics(best_probs.astype(np.float32), best_labels.astype(np.int32))
     print(f"Fold {fold} done: best_epoch={best_epoch} best_{args.select_metric}={best_metric:.5f} oof={oof_path}")

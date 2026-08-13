@@ -35,6 +35,7 @@ ensemble inference -> 9-value submission
 - Versioned `run-manifest-v1` provenance records for data-backed training runs.
 - Sanitized `dataset-fingerprint-v1` summaries in training manifests.
 - Versioned `checkpoint-v1` model metadata with legacy checkpoint loading.
+- Versioned `oof-v1` per-fold predictions with legacy-compatible validation.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
 - Archived early baselines under archived_baselines.
