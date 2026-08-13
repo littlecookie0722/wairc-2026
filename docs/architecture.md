@@ -43,7 +43,8 @@ flowchart LR
 | src/checkpoint.py | Versioned model checkpoint metadata and legacy-compatible loading | `checkpoint-v1` fields and loader validation |
 | src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
 | src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
-| src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities and select an inference rule | OOF schema and weight semantics |
+| src/rule_artifact.py | Versioned inference-rule payloads and legacy-compatible loading | `rule-v1` methods, thresholds, and class count |
+| src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities, select, and write a rule artifact | OOF/rule schemas and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
@@ -72,10 +73,10 @@ row identities, and cross-file label/sample-ID consistency.
 
 The rule-search entry point loads OOF files, aligns rows by original index,
 averages or weights probabilities, searches global/per-class/top-two rules,
-and writes a JSON rule plus OOF probabilities. The prediction entry point
+and writes a `rule-v1` JSON rule plus OOF probabilities. The prediction entry point
 groups checkpoints by their STFT metadata, predicts the public index in stable
 order, applies the selected rule, and delegates serialization to the
-submission module.
+submission module. Legacy rule JSON remains readable through the shared loader.
 
 ### Validation
 
@@ -92,8 +93,8 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
 - Training outputs now include a sanitized `run-manifest-v1` record with
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and
-  per-fold `oof-v1` artifacts. Unified rule/cache schemas and richer linkage
-  remain follow-up work.
+  per-fold `oof-v1` artifacts, and `rule-v1` inference rules. Aggregated
+  probability/cache schemas and richer linkage remain follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT
