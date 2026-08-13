@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import json
 import re
 from collections import defaultdict
 from pathlib import Path
@@ -11,6 +10,7 @@ from sklearn.metrics import f1_score
 
 from .config import NUM_CLASSES
 from .oof_artifact import load_oof_artifact
+from .rule_artifact import make_rule_payload, write_rule_artifact
 from .spectrogram import apply_inference_rule, search_best_inference_rule
 from .train_spectrogram_kfold import DEFAULT_SAVE_DIR
 
@@ -164,11 +164,20 @@ def main() -> None:
     rule_payload["oof_micro_f1"] = float(f1_score(labels, preds, average="micro", zero_division=0))
     rule_payload["oof_macro_f1"] = float(f1_score(labels, preds, average="macro", zero_division=0))
     rule_payload["num_oof_samples"] = int(len(labels))
-    rule_payload["source_files"] = [str(path) for path in paths]
+    rule_payload["source_files"] = [path.name for path in paths]
     rule_payload["tag_weights"] = tag_weights
+    rule_payload = make_rule_payload(
+        rule_payload["selected"],
+        candidates=rule_payload.get("candidates"),
+        num_classes=NUM_CLASSES,
+        oof_micro_f1=rule_payload["oof_micro_f1"],
+        oof_macro_f1=rule_payload["oof_macro_f1"],
+        num_oof_samples=rule_payload["num_oof_samples"],
+        source_files=rule_payload["source_files"],
+        tag_weights=tag_weights,
+    )
 
-    output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(rule_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    write_rule_artifact(output, rule_payload)
     np.savez(output.with_suffix(".oof_probs.npz"), probs=probs.astype(np.float16), labels=labels.astype(np.int8), sample_ids=sample_ids)
 
     sums = preds.sum(axis=1)

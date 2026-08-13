@@ -26,7 +26,8 @@ was released on 2026-08-12 with the following foundations:
   summary is implemented; artifact linkage remains follow-up work.
 - Version model checkpoint metadata and add legacy-compatible validation before
   checkpoints are consumed. Per-fold OOF files now use `oof-v1` with legacy
-  loading; rule and cache schemas remain follow-up work.
+  loading, and inference rules now use `rule-v1` with legacy loading. Cache
+  schemas remain follow-up work.
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
 - Define a generic public dataset adapter while preserving the competition
