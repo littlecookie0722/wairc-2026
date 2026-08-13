@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -17,6 +18,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
+from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
     DroneSpectrogramDataset,
@@ -66,6 +68,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--grad-clip", type=float, default=5.0)
     parser.add_argument("--select-metric", choices=["strict", "micro_f1", "macro_f1"], default="strict")
+    parser.add_argument("--run-id", type=str, default=None, help="Optional stable identifier for the run manifest.")
     return parser.parse_args()
 
 
@@ -234,94 +237,137 @@ def main() -> None:
     device = torch.device(args.device)
     use_amp = device.type == "cuda" and not args.no_amp
 
-    df = pd.read_csv(args.train_root / "index.csv")
-    if args.max_samples:
-        df = df.iloc[: args.max_samples].copy()
-    train_df, val_df = split_dataframe(df, args.val_ratio, args.seed)
-
-    train_dataset = make_dataset(args, train_df, augment=True)
-    val_dataset = make_dataset(args, val_df, augment=False)
-    train_loader = make_loader(args, train_dataset, args.batch_size, True, device, drop_last=True)
-    val_loader = make_loader(args, val_dataset, args.batch_size * 2, False, device)
-
-    train_labels = label_matrix(train_df["label_signature"])
-    pos_weight = compute_pos_weight(train_labels, args.pos_weight_max).to(device)
-    model = DroneClassifier(NUM_CLASSES, args.arch, not args.no_pretrained, args.dropout).to(device)
-    criterion = make_loss(args.loss, pos_weight)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-    scheduler = WarmupCosineLR(optimizer, args.warmup_epochs, args.epochs, args.lr)
-    scaler = GradScaler(device.type, enabled=use_amp)
-
-    config_payload = vars(args).copy()
-    config_payload.update({"device": str(device), "amp": use_amp, "train_rows": len(train_df), "val_rows": len(val_df)})
-    (args.save_dir / "config.json").write_text(json.dumps(config_payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
-
-    print(f"Device: {device}")
-    if device.type == "cuda":
-        print(f"GPU: {torch.cuda.get_device_name(0)}")
-    print(f"Model: {args.arch}, pretrained={not args.no_pretrained}, params={sum(p.numel() for p in model.parameters()) / 1e6:.2f}M")
-    print(f"Rows: train={len(train_df)} val={len(val_df)} | STFT={args.n_fft}/{args.hop} size={(args.n_fft // 2) + 1}x{args.target_time}")
-    print(f"pos_weight: {[round(float(v), 3) for v in pos_weight.detach().cpu()]}")
-
-    best_metric = -1.0
-    best_epoch = 0
-    best_probs: np.ndarray | None = None
-    best_labels: np.ndarray | None = None
-    history: list[dict[str, object]] = []
-    start_time = time.time()
-
-    for epoch in range(1, args.epochs + 1):
-        lr_now = scheduler.step()
-        epoch_start = time.time()
-        train_loss, train_metrics, _, _ = run_epoch(
-            model, train_loader, criterion, device, optimizer, scaler, use_amp, args.grad_clip, f"Epoch {epoch:03d}/train"
-        )
-        val_loss, val_metrics, val_probs, val_labels = run_epoch(
-            model, val_loader, criterion, device, None, None, use_amp, args.grad_clip, f"Epoch {epoch:03d}/val"
-        )
-
-        selected = float(val_metrics[args.select_metric])
-        record = {
-            "epoch": epoch,
-            "lr": lr_now,
-            "train_loss": train_loss,
-            "val_loss": val_loss,
-            "train": train_metrics,
-            "val": val_metrics,
-            "seconds": time.time() - epoch_start,
-        }
-        history.append(record)
-        (args.save_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
-
-        print(
-            f"Epoch {epoch:03d} | lr={lr_now:.2e} train_loss={train_loss:.4f} "
-            f"val_loss={val_loss:.4f} val_strict={val_metrics['strict']:.4f} "
-            f"val_micro={val_metrics['micro_f1']:.4f} val_macro={val_metrics['macro_f1']:.4f}"
-        )
-
-        if selected > best_metric + args.min_delta:
-            best_metric = selected
-            best_epoch = epoch
-            best_probs = val_probs
-            best_labels = val_labels
-            torch.save(checkpoint_payload(args, model, epoch, val_metrics), args.save_dir / "best_model.pth")
-            np.savez(args.save_dir / "best_val_probs.npz", probs=val_probs.astype(np.float16), labels=val_labels.astype(np.int8))
-            print(f"Saved best checkpoint: epoch={epoch} {args.select_metric}={best_metric:.5f}")
-        elif epoch - best_epoch >= args.patience:
-            print(f"Early stopping: no improvement for {args.patience} epochs.")
-            break
-
-    if best_probs is None or best_labels is None:
-        raise RuntimeError("Training finished without a best checkpoint")
-
-    rule_payload = search_best_inference_rule(best_probs.astype(np.float32), best_labels.astype(np.int32), NUM_CLASSES)
-    (args.save_dir / "best_rule.json").write_text(json.dumps(rule_payload, indent=2, ensure_ascii=False), encoding="utf-8")
-    selected_rule = rule_payload["selected"]
-    print(
-        f"Best inference rule: {selected_rule['method']} "
-        f"accuracy={float(selected_rule['accuracy']):.5f} saved to {args.save_dir / 'best_rule.json'}"
+    run_id = args.run_id or make_run_id("spectrogram", args.seed)
+    manifest_path = args.save_dir / "run-manifest.json"
+    manifest = create_run_manifest(
+        run_id=run_id,
+        command=[sys.executable, "-m", "src.train_spectrogram", *sys.argv[1:]],
+        args=vars(args),
+        data={"adapter": "wairc-competition-v1", "split": "train-validation", "fold": None},
+        transform={
+            "version": "stft-v1",
+            "nFft": args.n_fft,
+            "hop": args.hop,
+            "targetFreq": args.n_fft // 2 + 1,
+            "targetTime": args.target_time,
+            "cacheTime": args.cache_time,
+        },
+        model={"architecture": args.arch, "numClasses": NUM_CLASSES, "pretrained": not args.no_pretrained},
+        training={
+            "epochs": args.epochs,
+            "batchSize": args.batch_size,
+            "seed": args.seed,
+            "loss": args.loss,
+            "selectMetric": args.select_metric,
+        },
+        device=str(device),
     )
-    print(f"Finished in {(time.time() - start_time) / 60:.1f} min. Best epoch={best_epoch}.")
+    write_run_manifest(manifest_path, manifest)
+
+    try:
+        df = pd.read_csv(args.train_root / "index.csv")
+        if args.max_samples:
+            df = df.iloc[: args.max_samples].copy()
+        train_df, val_df = split_dataframe(df, args.val_ratio, args.seed)
+
+        train_dataset = make_dataset(args, train_df, augment=True)
+        val_dataset = make_dataset(args, val_df, augment=False)
+        train_loader = make_loader(args, train_dataset, args.batch_size, True, device, drop_last=True)
+        val_loader = make_loader(args, val_dataset, args.batch_size * 2, False, device)
+
+        train_labels = label_matrix(train_df["label_signature"])
+        pos_weight = compute_pos_weight(train_labels, args.pos_weight_max).to(device)
+        model = DroneClassifier(NUM_CLASSES, args.arch, not args.no_pretrained, args.dropout).to(device)
+        criterion = make_loss(args.loss, pos_weight)
+        optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+        scheduler = WarmupCosineLR(optimizer, args.warmup_epochs, args.epochs, args.lr)
+        scaler = GradScaler(device.type, enabled=use_amp)
+
+        config_payload = vars(args).copy()
+        config_payload.update({"device": str(device), "amp": use_amp, "train_rows": len(train_df), "val_rows": len(val_df)})
+        (args.save_dir / "config.json").write_text(json.dumps(config_payload, indent=2, ensure_ascii=False, default=str), encoding="utf-8")
+
+        print(f"Device: {device}")
+        if device.type == "cuda":
+            print(f"GPU: {torch.cuda.get_device_name(0)}")
+        print(f"Model: {args.arch}, pretrained={not args.no_pretrained}, params={sum(p.numel() for p in model.parameters()) / 1e6:.2f}M")
+        print(f"Rows: train={len(train_df)} val={len(val_df)} | STFT={args.n_fft}/{args.hop} size={(args.n_fft // 2) + 1}x{args.target_time}")
+        print(f"pos_weight: {[round(float(v), 3) for v in pos_weight.detach().cpu()]}")
+
+        best_metric = -1.0
+        best_epoch = 0
+        best_probs: np.ndarray | None = None
+        best_labels: np.ndarray | None = None
+        history: list[dict[str, object]] = []
+        start_time = time.time()
+
+        for epoch in range(1, args.epochs + 1):
+            lr_now = scheduler.step()
+            epoch_start = time.time()
+            train_loss, train_metrics, _, _ = run_epoch(
+                model, train_loader, criterion, device, optimizer, scaler, use_amp, args.grad_clip, f"Epoch {epoch:03d}/train"
+            )
+            val_loss, val_metrics, val_probs, val_labels = run_epoch(
+                model, val_loader, criterion, device, None, None, use_amp, args.grad_clip, f"Epoch {epoch:03d}/val"
+            )
+
+            selected = float(val_metrics[args.select_metric])
+            record = {
+                "epoch": epoch,
+                "lr": lr_now,
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+                "train": train_metrics,
+                "val": val_metrics,
+                "seconds": time.time() - epoch_start,
+            }
+            history.append(record)
+            (args.save_dir / "history.json").write_text(json.dumps(history, indent=2), encoding="utf-8")
+
+            print(
+                f"Epoch {epoch:03d} | lr={lr_now:.2e} train_loss={train_loss:.4f} "
+                f"val_loss={val_loss:.4f} val_strict={val_metrics['strict']:.4f} "
+                f"val_micro={val_metrics['micro_f1']:.4f} val_macro={val_metrics['macro_f1']:.4f}"
+            )
+
+            if selected > best_metric + args.min_delta:
+                best_metric = selected
+                best_epoch = epoch
+                best_probs = val_probs
+                best_labels = val_labels
+                torch.save(checkpoint_payload(args, model, epoch, val_metrics), args.save_dir / "best_model.pth")
+                np.savez(args.save_dir / "best_val_probs.npz", probs=val_probs.astype(np.float16), labels=val_labels.astype(np.int8))
+                print(f"Saved best checkpoint: epoch={epoch} {args.select_metric}={best_metric:.5f}")
+            elif epoch - best_epoch >= args.patience:
+                print(f"Early stopping: no improvement for {args.patience} epochs.")
+                break
+
+        if best_probs is None or best_labels is None:
+            raise RuntimeError("Training finished without a best checkpoint")
+
+        rule_payload = search_best_inference_rule(best_probs.astype(np.float32), best_labels.astype(np.int32), NUM_CLASSES)
+        (args.save_dir / "best_rule.json").write_text(json.dumps(rule_payload, indent=2, ensure_ascii=False), encoding="utf-8")
+        selected_rule = rule_payload["selected"]
+        print(
+            f"Best inference rule: {selected_rule['method']} "
+            f"accuracy={float(selected_rule['accuracy']):.5f} saved to {args.save_dir / 'best_rule.json'}"
+        )
+        finalize_run_manifest(
+            manifest_path,
+            "completed",
+            outputs={
+                "checkpoint": "best_model.pth",
+                "validationProbabilities": "best_val_probs.npz",
+                "rule": "best_rule.json",
+                "config": "config.json",
+                "history": "history.json",
+            },
+            metrics={"bestEpoch": best_epoch, "bestMetric": best_metric, "rule": selected_rule},
+        )
+        print(f"Finished in {(time.time() - start_time) / 60:.1f} min. Best epoch={best_epoch}.")
+    except Exception as error:
+        finalize_run_manifest(manifest_path, "failed", error={"type": type(error).__name__})
+        raise
 
 
 if __name__ == "__main__":

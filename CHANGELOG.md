@@ -7,6 +7,9 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+- Versioned `run-manifest-v1` provenance records for single-model and k-fold
+  training runs, including sanitized Git, runtime, transform, model, and
+  output metadata.
 - Stable `wairc_rf` Python namespace with a versioned `STFTConfig` and validated
   label helpers.
 - Exact compatibility tests and documentation for the released `stft-v1`

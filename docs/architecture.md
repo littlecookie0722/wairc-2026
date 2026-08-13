@@ -37,8 +37,9 @@ flowchart LR
 | src/config.py | Repository-relative dataset and output paths, class count, seed, validation ratio | NUM_CLASSES, default paths |
 | src/data.py | index.csv validation, IQ path resolution, label parsing, multi-hot conversion, split helper | label signature and sample IDs |
 | src/spectrogram.py | STFT conversion, cache-backed dataset, model construction, losses, metrics, inference rules | STFT values, model inputs, rule semantics |
-| src/train_spectrogram.py | Single-model training, validation metrics, checkpoint and rule outputs | CLI arguments and checkpoint fields |
-| src/train_spectrogram_kfold.py | Stratified/K-fold training, per-fold checkpoints and OOF files | fold indices, OOF fields, tag naming |
+| src/train_spectrogram.py | Single-model training, validation metrics, checkpoint/rule outputs, and run manifest | CLI arguments and checkpoint fields |
+| src/train_spectrogram_kfold.py | Stratified/K-fold training, per-fold checkpoints/OOF files, and run manifest | fold indices, OOF fields, tag naming |
+| src/run_manifest.py | Sanitized `run-manifest-v1` provenance records for training runs | manifest schema and privacy boundary |
 | src/search_spectrogram_kfold_thresholds.py | Average or weighted OOF probabilities and select an inference rule | OOF file schema and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
@@ -83,8 +84,9 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   small set of script-oriented modules.
 - There is no unified experiment configuration file; the CLI currently
   dispatches to the existing script arguments.
-- Training outputs include configuration, history, checkpoints, and rules,
-  but do not yet capture a complete environment and Git provenance manifest.
+- Training outputs now include a sanitized `run-manifest-v1` record with
+  selected environment and Git provenance; dataset fingerprints and unified
+  checkpoint/OOF/rule schemas remain follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT
