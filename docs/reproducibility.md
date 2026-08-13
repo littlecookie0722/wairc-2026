@@ -34,13 +34,24 @@ At minimum, record:
 - checkpoint, OOF, rule, submission, and validation output paths.
 
 The training scripts write configuration JSON, history JSON, checkpoint
-metadata, OOF files, and rule JSON. They now also write a `run-manifest.json`
+metadata, OOF files, and rule JSON. Model checkpoints written by the current
+training scripts use the `checkpoint-v1` schema and retain the original flat
+metadata fields for compatibility. The prediction entry points accept both
+this schema and older unversioned checkpoint dictionaries, normalizing the
+older case as `legacy-unversioned`. They now also write a `run-manifest.json`
 (or a tag-specific `run-manifest_<tag>.json` for k-fold runs) using the
 `run-manifest-v1` schema. The manifest records a Git commit and dirty state,
 selected runtime versions, device information, transform/model/training
 parameters, the sanitized command arguments, and output filenames. It is
 finalized as `completed` or `failed` so an interrupted run is distinguishable
 from a finished run.
+
+The `checkpoint-v1` envelope requires the model state dictionary, architecture,
+class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
+fails before model construction when these fields are missing or incompatible.
+Legacy unversioned checkpoints keep the original fallback behavior for optional
+metadata, and are labeled as legacy in memory only; loading them does not
+rewrite the source file.
 
 The manifest deliberately excludes absolute input/output paths, usernames,
 secrets, and raw dataset identifiers. A Git commit of `unknown` or a dirty

@@ -10,6 +10,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, SUBMISSION_PATH, TEST_ROOT
+from .checkpoint import load_checkpoint
 from .data import load_index
 from .spectrogram import (
     DroneClassifier,
@@ -61,7 +62,7 @@ def main() -> None:
 
     checkpoint_path = args.checkpoint or (args.save_dir / "best_model.pth")
     rule_path = args.rule_path or (args.save_dir / "best_rule.json")
-    checkpoint = torch.load(checkpoint_path, map_location=device)
+    checkpoint = load_checkpoint(checkpoint_path, map_location=device)
 
     model = DroneClassifier(
         num_classes=int(checkpoint.get("num_classes", NUM_CLASSES)),

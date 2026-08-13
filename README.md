@@ -33,6 +33,7 @@ ensemble inference -> 9-value submission
 - OOF threshold/rule search and weighted model ensemble.
 - Public-test prediction and strict submission-format validation.
 - Versioned `run-manifest-v1` provenance records for data-backed training runs.
+- Versioned `checkpoint-v1` model metadata with legacy checkpoint loading.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
 - Archived early baselines under archived_baselines.

@@ -5,7 +5,6 @@ import json
 import random
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -18,6 +17,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
+from .checkpoint import make_checkpoint_payload
 from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
@@ -209,21 +209,20 @@ def run_epoch(
 
 
 def checkpoint_payload(args: argparse.Namespace, model: DroneClassifier, epoch: int, metrics: dict[str, float]) -> dict[str, object]:
-    return {
-        "epoch": epoch,
-        "model_state_dict": model.state_dict(),
-        "arch": args.arch,
-        "pretrained": not args.no_pretrained,
-        "dropout": args.dropout,
-        "num_classes": NUM_CLASSES,
-        "n_fft": args.n_fft,
-        "hop": args.hop,
-        "target_freq": args.n_fft // 2 + 1,
-        "target_time": args.target_time,
-        "cache_time": args.cache_time,
-        "metrics": metrics,
-        "created_at": datetime.now(timezone.utc).isoformat(),
-    }
+    return make_checkpoint_payload(
+        model_state_dict=model.state_dict(),
+        arch=args.arch,
+        pretrained=not args.no_pretrained,
+        dropout=args.dropout,
+        num_classes=NUM_CLASSES,
+        n_fft=args.n_fft,
+        hop=args.hop,
+        target_freq=args.n_fft // 2 + 1,
+        target_time=args.target_time,
+        cache_time=args.cache_time,
+        epoch=epoch,
+        metrics=metrics,
+    )
 
 
 def main() -> None:
