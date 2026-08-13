@@ -10,6 +10,7 @@ import numpy as np
 from sklearn.metrics import f1_score
 
 from .config import NUM_CLASSES
+from .oof_artifact import load_oof_artifact
 from .spectrogram import apply_inference_rule, search_best_inference_rule
 from .train_spectrogram_kfold import DEFAULT_SAVE_DIR
 
@@ -72,15 +73,23 @@ def load_averaged_oof(paths: list[Path]) -> tuple[np.ndarray, np.ndarray, np.nda
     sample_id_by_index: dict[int, int] = {}
 
     for path in paths:
-        with np.load(path, allow_pickle=False) as data:
-            probs = data["probs"].astype(np.float32)
-            labels = data["labels"].astype(np.int32)
-            indices = data["indices"].astype(np.int64)
-            sample_ids = data["sample_ids"].astype(np.int64) if "sample_ids" in data else indices
+        artifact = load_oof_artifact(path)
+        probs = artifact["probs"]
+        labels = artifact["labels"]
+        indices = artifact["indices"]
+        sample_ids = artifact["sample_ids"]
         for local_idx, original_idx in enumerate(indices.tolist()):
-            prob_by_index[int(original_idx)].append(probs[local_idx])
-            label_by_index[int(original_idx)] = labels[local_idx]
-            sample_id_by_index[int(original_idx)] = int(sample_ids[local_idx])
+            index = int(original_idx)
+            sample_id = int(sample_ids[local_idx])
+            existing_label = label_by_index.get(index)
+            if existing_label is not None and not np.array_equal(existing_label, labels[local_idx]):
+                raise ValueError(f"OOF label mismatch for original index {index}")
+            existing_sample_id = sample_id_by_index.get(index)
+            if existing_sample_id is not None and existing_sample_id != sample_id:
+                raise ValueError(f"OOF sample ID mismatch for original index {index}")
+            prob_by_index[index].append(probs[local_idx])
+            label_by_index[index] = labels[local_idx]
+            sample_id_by_index[index] = sample_id
 
     ordered = sorted(prob_by_index)
     probs_out = np.stack([np.mean(prob_by_index[idx], axis=0) for idx in ordered]).astype(np.float32)
@@ -100,15 +109,23 @@ def load_weighted_oof(paths: list[Path], tag_weights: dict[str, float]) -> tuple
         if tag not in tag_weights:
             raise ValueError(f"No weight supplied for OOF tag '{tag}'")
         seen_tags.add(tag)
-        with np.load(path, allow_pickle=False) as data:
-            probs = data["probs"].astype(np.float32)
-            labels = data["labels"].astype(np.int32)
-            indices = data["indices"].astype(np.int64)
-            sample_ids = data["sample_ids"].astype(np.int64) if "sample_ids" in data else indices
+        artifact = load_oof_artifact(path)
+        probs = artifact["probs"]
+        labels = artifact["labels"]
+        indices = artifact["indices"]
+        sample_ids = artifact["sample_ids"]
         for local_idx, original_idx in enumerate(indices.tolist()):
-            prob_by_index[int(original_idx)].append((tag_weights[tag], probs[local_idx]))
-            label_by_index[int(original_idx)] = labels[local_idx]
-            sample_id_by_index[int(original_idx)] = int(sample_ids[local_idx])
+            index = int(original_idx)
+            sample_id = int(sample_ids[local_idx])
+            existing_label = label_by_index.get(index)
+            if existing_label is not None and not np.array_equal(existing_label, labels[local_idx]):
+                raise ValueError(f"OOF label mismatch for original index {index}")
+            existing_sample_id = sample_id_by_index.get(index)
+            if existing_sample_id is not None and existing_sample_id != sample_id:
+                raise ValueError(f"OOF sample ID mismatch for original index {index}")
+            prob_by_index[index].append((tag_weights[tag], probs[local_idx]))
+            label_by_index[index] = labels[local_idx]
+            sample_id_by_index[index] = sample_id
 
     missing_tags = set(tag_weights) - seen_tags
     if missing_tags:

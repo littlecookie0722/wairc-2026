@@ -55,6 +55,13 @@ another local directory therefore preserves its fingerprint, while changing
 index semantics, the train/test label scope, or referenced file content changes
 the relevant digest.
 
+Each k-fold OOF file uses the `oof-v1` schema. It retains the historical
+`probs`, `labels`, `indices`, `fold`, `sample_ids`, and `metrics` arrays while
+adding scalar schema metadata. The rule-search reader accepts legacy
+unversioned files, validates both formats, and rejects shape/range errors or
+conflicting labels and sample IDs for the same original row. It does not alter
+the existing average or tag-weighted probability formulas.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.
