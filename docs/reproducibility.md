@@ -46,6 +46,15 @@ parameters, the sanitized command arguments, and output filenames. It is
 finalized as `completed` or `failed` so an interrupted run is distinguishable
 from a finished run.
 
+After the training index is loaded, each training manifest also records a
+`dataset-fingerprint-v1` summary. It uses SHA-256 over normalized index
+metadata and the content of each referenced IQ file. The summary records only
+aggregate counts, node-presence counts, and digests; it excludes the dataset
+root, filenames, sample IDs, and raw IQ values. Moving an unchanged dataset to
+another local directory therefore preserves its fingerprint, while changing
+index semantics, the train/test label scope, or referenced file content changes
+the relevant digest.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.

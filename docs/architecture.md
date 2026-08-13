@@ -41,6 +41,7 @@ flowchart LR
 | src/train_spectrogram_kfold.py | Stratified/K-fold training, per-fold checkpoints/OOF files, and run manifest | fold indices, OOF fields, tag naming |
 | src/run_manifest.py | Sanitized `run-manifest-v1` provenance records for training runs | manifest schema and privacy boundary |
 | src/checkpoint.py | Versioned model checkpoint metadata and legacy-compatible loading | `checkpoint-v1` fields and loader validation |
+| src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
 | src/search_spectrogram_kfold_thresholds.py | Average or weighted OOF probabilities and select an inference rule | OOF file schema and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
@@ -86,9 +87,10 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
 - There is no unified experiment configuration file; the CLI currently
   dispatches to the existing script arguments.
 - Training outputs now include a sanitized `run-manifest-v1` record with
-  selected environment and Git provenance, and model checkpoints carry the
-  `checkpoint-v1` metadata envelope. Dataset fingerprints and unified
-  OOF/rule/cache schemas remain follow-up work.
+  selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
+  and model checkpoints carrying the `checkpoint-v1` metadata envelope.
+  Richer artifact linkage and unified OOF/rule/cache schemas remain follow-up
+  work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT
