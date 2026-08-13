@@ -19,8 +19,10 @@ was released on 2026-08-12 with the following foundations:
 
 ## Next: reproducible artifacts and stable interfaces
 
-- Capture Git, Python, dependency, device, and command provenance for every
-  training run.
+- Capture Git, Python, dependency, device, and sanitized command provenance for
+  every single-model and k-fold training run through `run-manifest-v1`.
+- Add dataset fingerprints and richer artifact linkage without exposing raw
+  competition data or local paths.
 - Version checkpoint, OOF, rule, and cache metadata, and add deterministic
   compatibility checks before artifacts are consumed.
 - Expand the initial stable transform and label API while preserving the

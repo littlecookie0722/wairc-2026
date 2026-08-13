@@ -33,10 +33,20 @@ At minimum, record:
 - Git commit and dirty working-tree state;
 - checkpoint, OOF, rule, submission, and validation output paths.
 
-The current training scripts already write configuration JSON, history JSON,
-checkpoint metadata, OOF files, and rule JSON. Complete environment and Git
-manifest capture is a follow-up improvement; do not describe it as fully
-automatic until it is implemented.
+The training scripts write configuration JSON, history JSON, checkpoint
+metadata, OOF files, and rule JSON. They now also write a `run-manifest.json`
+(or a tag-specific `run-manifest_<tag>.json` for k-fold runs) using the
+`run-manifest-v1` schema. The manifest records a Git commit and dirty state,
+selected runtime versions, device information, transform/model/training
+parameters, the sanitized command arguments, and output filenames. It is
+finalized as `completed` or `failed` so an interrupted run is distinguishable
+from a finished run.
+
+The manifest deliberately excludes absolute input/output paths, usernames,
+secrets, and raw dataset identifiers. A Git commit of `unknown` or a dirty
+state may occur when Git is unavailable or the run starts from a modified
+working tree. Seed capture does not promise bit-for-bit determinism across all
+CUDA operators and hardware.
 
 ## Verification layers
 

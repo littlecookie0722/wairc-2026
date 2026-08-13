@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -14,6 +15,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from torch.amp import GradScaler
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT
+from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
     WarmupCosineLR,
@@ -61,6 +63,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-amp", action="store_true")
     parser.add_argument("--grad-clip", type=float, default=5.0)
     parser.add_argument("--select-metric", choices=["strict", "micro_f1", "macro_f1"], default="strict")
+    parser.add_argument("--run-id", type=str, default=None, help="Optional stable identifier for the run manifest.")
     return parser.parse_args()
 
 
@@ -194,31 +197,85 @@ def main() -> None:
         args.device = "cpu"
     device = torch.device(args.device)
 
-    random.seed(args.seed)
-    np.random.seed(args.seed)
-    df = pd.read_csv(args.train_root / "index.csv")
-    if args.max_samples:
-        df = df.iloc[: args.max_samples].copy().reset_index(drop=True)
-    splits = make_splits(df, args.n_splits, args.seed)
-    folds = [args.fold] if args.fold is not None else list(range(args.n_splits))
-
-    config_payload = vars(args).copy()
-    config_payload.update({"device": str(device), "train_rows": len(df), "folds": folds})
-    (args.save_dir / f"config_{args.tag or 'default'}.json").write_text(
-        json.dumps(config_payload, indent=2, ensure_ascii=False, default=str),
-        encoding="utf-8",
+    run_id = args.run_id or make_run_id("spectrogram-kfold", args.seed)
+    manifest_path = args.save_dir / f"run-manifest_{args.tag or 'default'}.json"
+    manifest = create_run_manifest(
+        run_id=run_id,
+        command=[sys.executable, "-m", "src.train_spectrogram_kfold", *sys.argv[1:]],
+        args=vars(args),
+        data={"adapter": "wairc-competition-v1", "split": "k-fold", "fold": args.fold},
+        transform={
+            "version": "stft-v1",
+            "nFft": args.n_fft,
+            "hop": args.hop,
+            "targetFreq": args.n_fft // 2 + 1,
+            "targetTime": args.target_time,
+            "cacheTime": args.cache_time,
+        },
+        model={"architecture": args.arch, "numClasses": NUM_CLASSES, "pretrained": not args.no_pretrained},
+        training={
+            "epochs": args.epochs,
+            "batchSize": args.batch_size,
+            "seed": args.seed,
+            "folds": [args.fold] if args.fold is not None else list(range(args.n_splits)),
+            "loss": args.loss,
+            "selectMetric": args.select_metric,
+        },
+        device=str(device),
     )
+    write_run_manifest(manifest_path, manifest)
 
-    results = []
-    for fold in folds:
-        if fold < 0 or fold >= args.n_splits:
-            raise ValueError(f"fold must be in 0..{args.n_splits - 1}")
-        train_idx, val_idx = splits[fold]
-        results.append(train_fold(args, df, train_idx, val_idx, fold, device))
+    try:
+        random.seed(args.seed)
+        np.random.seed(args.seed)
+        df = pd.read_csv(args.train_root / "index.csv")
+        if args.max_samples:
+            df = df.iloc[: args.max_samples].copy().reset_index(drop=True)
+        splits = make_splits(df, args.n_splits, args.seed)
+        folds = [args.fold] if args.fold is not None else list(range(args.n_splits))
 
-    summary_path = args.save_dir / f"summary_{args.tag or 'default'}.json"
-    summary_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
-    print(f"\nK-fold training summary saved: {summary_path}")
+        config_payload = vars(args).copy()
+        config_payload.update({"device": str(device), "train_rows": len(df), "folds": folds})
+        (args.save_dir / f"config_{args.tag or 'default'}.json").write_text(
+            json.dumps(config_payload, indent=2, ensure_ascii=False, default=str),
+            encoding="utf-8",
+        )
+
+        results = []
+        for fold in folds:
+            if fold < 0 or fold >= args.n_splits:
+                raise ValueError(f"fold must be in 0..{args.n_splits - 1}")
+            train_idx, val_idx = splits[fold]
+            results.append(train_fold(args, df, train_idx, val_idx, fold, device))
+
+        summary_path = args.save_dir / f"summary_{args.tag or 'default'}.json"
+        summary_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
+        finalize_run_manifest(
+            manifest_path,
+            "completed",
+            outputs={
+                "summary": summary_path.name,
+                "config": f"config_{args.tag or 'default'}.json",
+                "folds": [result["fold"] for result in results],
+                "checkpoints": [Path(str(result["model_path"])).name for result in results],
+                "oof": [Path(str(result["oof_path"])).name for result in results],
+            },
+            metrics={
+                "folds": [
+                    {
+                        "fold": result["fold"],
+                        "bestEpoch": result["best_epoch"],
+                        "bestMetric": result["best_metric"],
+                        "metrics": result["metrics"],
+                    }
+                    for result in results
+                ]
+            },
+        )
+        print(f"\nK-fold training summary saved: {summary_path}")
+    except Exception as error:
+        finalize_run_manifest(manifest_path, "failed", error={"type": type(error).__name__})
+        raise
 
 
 if __name__ == "__main__":
