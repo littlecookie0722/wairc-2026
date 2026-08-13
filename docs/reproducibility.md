@@ -75,6 +75,19 @@ node mask. A cache with mismatched metadata, invalid arrays, or corrupted bytes
 is discarded and recomputed. Older cache files containing only `x` and
 `node_mask` remain readable when their shape is compatible.
 
+## Artifact inspection
+
+The unified CLI can inspect or validate an artifact without rewriting it:
+
+    wairc artifact inspect outputs/models/model.pth --json
+    wairc artifact validate outputs/oof/oof_fold0.npz --json
+
+The command detects checkpoint, OOF, inference-rule, and STFT cache files,
+reuses their existing compatibility loaders, reports the schema and a small
+path-redacted summary, and exits non-zero when validation fails. Legacy
+unversioned checkpoints, OOF files, rules, and shape-compatible caches are
+reported as `legacy-unversioned`; the command does not upgrade or mutate them.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.

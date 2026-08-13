@@ -7,6 +7,12 @@ verified repository changes; they do not imply a release has been published.
 
 Future changes will be listed here before the next release.
 
+### Added
+
+- `wairc artifact inspect` and `wairc artifact validate` commands with JSON
+  summaries, legacy compatibility reporting, and non-zero failure status for
+  invalid checkpoint, OOF, inference-rule, and STFT cache artifacts.
+
 ## [0.2.0] - 2026-08-13
 
 ### Added

@@ -12,6 +12,7 @@ def test_cli_prints_help_and_version(capsys):
     assert "wairc <command>" in help_output
     assert "demo" in help_output
     assert "validate" in help_output
+    assert "artifact" in help_output
 
     main(["--version"])
     assert capsys.readouterr().out.strip() == __version__

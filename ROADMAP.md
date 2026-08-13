@@ -31,10 +31,11 @@ was released on 2026-08-12 with the following foundations:
   submission boundaries.
 - Architecture, reproducibility, contribution, and security documentation.
 
-## Next: artifact inspection, interoperability, and stable interfaces
+## Next: interoperability and stable interfaces
 
-- Add a small artifact inspection and compatibility CLI for checkpoints, OOF,
-  rule, and cache files.
+- Extend the artifact inspection and compatibility CLI with cross-artifact
+  linkage checks while keeping local paths and restricted data out of public
+  artifacts.
 - Link related artifacts more explicitly in documented run metadata while
   keeping local paths and restricted data out of public artifacts.
 - Expand the initial stable transform and label API while preserving the
