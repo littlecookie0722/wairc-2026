@@ -21,8 +21,9 @@ was released on 2026-08-12 with the following foundations:
 
 - Capture Git, Python, dependency, device, and sanitized command provenance for
   every single-model and k-fold training run through `run-manifest-v1`.
-- Add dataset fingerprints and richer artifact linkage without exposing raw
-  competition data or local paths.
+- Add root-independent `dataset-fingerprint-v1` summaries and richer artifact
+  linkage without exposing raw competition data or local paths. The dataset
+  summary is implemented; artifact linkage remains follow-up work.
 - Version model checkpoint metadata and add legacy-compatible validation before
   checkpoints are consumed. OOF, rule, and cache schemas remain follow-up
   work.
