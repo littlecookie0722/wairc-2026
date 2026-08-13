@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import math
 import os
 import warnings
@@ -529,22 +528,9 @@ def search_best_inference_rule(probs: np.ndarray, labels: np.ndarray, num_classe
 
 
 def load_inference_rule(path: Path, num_classes: int = NUM_CLASSES) -> dict[str, Any]:
-    if not path.exists():
-        return {
-            "method": "per_class_thresholds",
-            "thresholds": [0.5] * num_classes,
-            "accuracy": None,
-        }
-    payload = json.loads(path.read_text(encoding="utf-8"))
-    if "selected" in payload:
-        return payload["selected"]
-    if "thresholds" in payload:
-        return {
-            "method": "per_class_thresholds",
-            "thresholds": payload["thresholds"],
-            "accuracy": payload.get("per_class_acc"),
-        }
-    return payload
+    from .rule_artifact import load_rule_artifact
+
+    return load_rule_artifact(path, num_classes=num_classes)
 
 
 class WarmupCosineLR:
