@@ -7,6 +7,9 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+- Versioned `oof-v1` per-fold prediction artifacts with legacy-compatible
+  loading and validation of shapes, ranges, row identities, and cross-file
+  label/sample-ID consistency.
 - Sanitized `dataset-fingerprint-v1` summaries for training manifests, covering
   normalized index metadata and referenced IQ file content without recording
   local paths or raw sample data.
