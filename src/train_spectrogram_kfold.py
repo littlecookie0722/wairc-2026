@@ -15,6 +15,7 @@ from torch.amp import GradScaler
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT
 from .checkpoint import make_checkpoint_payload
+from .dataset_fingerprint import fingerprint_dataset
 from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
@@ -228,6 +229,8 @@ def main() -> None:
         random.seed(args.seed)
         np.random.seed(args.seed)
         df = pd.read_csv(args.train_root / "index.csv")
+        manifest["data"]["fingerprint"] = fingerprint_dataset(args.train_root, has_labels=True)
+        write_run_manifest(manifest_path, manifest)
         if args.max_samples:
             df = df.iloc[: args.max_samples].copy().reset_index(drop=True)
         splits = make_splits(df, args.n_splits, args.seed)

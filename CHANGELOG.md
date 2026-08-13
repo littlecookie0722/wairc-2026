@@ -7,6 +7,9 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+- Sanitized `dataset-fingerprint-v1` summaries for training manifests, covering
+  normalized index metadata and referenced IQ file content without recording
+  local paths or raw sample data.
 - Versioned `checkpoint-v1` metadata for newly written model checkpoints and a
   shared loader that accepts legacy unversioned checkpoint dictionaries.
 - Versioned `run-manifest-v1` provenance records for single-model and k-fold
