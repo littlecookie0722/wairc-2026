@@ -5,10 +5,10 @@ machine-learning research project. Work is prioritized around reproducibility,
 clear compatibility boundaries, and workflows that contributors can run
 without access to private data.
 
-## Prepared: v0.2.0 reproducible artifact foundation
+## Released: v0.2.0 reproducible artifact foundation
 
 [v0.2.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.2.0)
-is the next release target, with the following verified capabilities:
+was released on 2026-08-13 with the following verified capabilities:
 
 - `run-manifest-v1` provenance records with sanitized runtime, command, Git,
   model, transform, and output metadata.
