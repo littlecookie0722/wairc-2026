@@ -23,8 +23,9 @@ was released on 2026-08-12 with the following foundations:
   every single-model and k-fold training run through `run-manifest-v1`.
 - Add dataset fingerprints and richer artifact linkage without exposing raw
   competition data or local paths.
-- Version checkpoint, OOF, rule, and cache metadata, and add deterministic
-  compatibility checks before artifacts are consumed.
+- Version model checkpoint metadata and add legacy-compatible validation before
+  checkpoints are consumed. OOF, rule, and cache schemas remain follow-up
+  work.
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
 - Define a generic public dataset adapter while preserving the competition
