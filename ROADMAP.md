@@ -5,6 +5,20 @@ machine-learning research project. Work is prioritized around reproducibility,
 clear compatibility boundaries, and workflows that contributors can run
 without access to private data.
 
+## Prepared: v0.2.0 reproducible artifact foundation
+
+[v0.2.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.2.0)
+is the next release target, with the following verified capabilities:
+
+- `run-manifest-v1` provenance records with sanitized runtime, command, Git,
+  model, transform, and output metadata.
+- `dataset-fingerprint-v1` summaries that link a run to normalized dataset
+  content without recording local paths or raw samples.
+- Legacy-compatible `checkpoint-v1`, `oof-v1`, `rule-v1`, and `cache-v1`
+  artifact schemas with focused validation and regression coverage.
+- Python 3.10, 3.11, and 3.12 CI, source/wheel builds, isolated wheel checks,
+  synthetic CPU checks, and documented compatibility boundaries.
+
 ## Released: v0.1.0 foundation
 
 [v0.1.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0)
@@ -17,17 +31,12 @@ was released on 2026-08-12 with the following foundations:
   submission boundaries.
 - Architecture, reproducibility, contribution, and security documentation.
 
-## Next: reproducible artifacts and stable interfaces
+## Next: artifact inspection, interoperability, and stable interfaces
 
-- Capture Git, Python, dependency, device, and sanitized command provenance for
-  every single-model and k-fold training run through `run-manifest-v1`.
-- Add root-independent `dataset-fingerprint-v1` summaries and richer artifact
-  linkage without exposing raw competition data or local paths. The dataset
-  summary is implemented; artifact linkage remains follow-up work.
-- Version model checkpoint metadata and add legacy-compatible validation before
-  checkpoints are consumed. Per-fold OOF files now use `oof-v1` with legacy
-  loading, inference rules now use `rule-v1` with legacy loading, and STFT
-  caches now use `cache-v1` with legacy loading.
+- Add a small artifact inspection and compatibility CLI for checkpoints, OOF,
+  rule, and cache files.
+- Link related artifacts more explicitly in documented run metadata while
+  keeping local paths and restricted data out of public artifacts.
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
 - Define a generic public dataset adapter while preserving the competition
@@ -42,6 +51,6 @@ was released on 2026-08-12 with the following foundations:
 - Add robustness protocols for signal-to-noise ratio, frequency offset,
   timing offset, gain changes, and missing receiver nodes.
 
-Only the first section describes released capability. All other items are
+Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.

@@ -1,38 +1,46 @@
 # Release Checklist
 
-This document records the v0.1.0 release state and provides a baseline for
-future releases. WAIRC-2026 v0.1.0 was published on 2026-08-12; unchecked items
-below are explicit post-release follow-up work, not claims that the release is
-still pending.
+This document records the `v0.2.0` release-candidate gate and provides the
+baseline for future releases. A checked item is backed by the release
+candidate's local or GitHub verification; it is not a claim about real-data
+performance.
 
 ## Maintainer decisions
 
-- [x] Confirm the MIT software license and add the `LICENSE` file.
-- [x] Confirm that repository-authored software is released under MIT.
-- [x] Keep competition data, checkpoints, and generated outputs outside the
-  release artifact.
+- [x] Repository-authored software remains under the MIT License.
+- [x] Competition data, model weights, generated caches, private labels, and
+  generated outputs are outside the release artifact.
+- [x] The release preserves the 0..8 label mapping, interleaved IQ parsing,
+  missing-node semantics, `stft-v1`, fold behavior, inference rules, ensemble
+  weighting, checkpoint compatibility, and submission format.
 
-## Verification
+## v0.2.0 verification
 
-- [ ] Install the built wheel in a clean environment with runtime dependencies,
-  then run `wairc --version`, `wairc --help`, `wairc demo`, and `pip check`.
-  This clean-wheel verification remains pending after v0.1.0.
-- [x] Run `python -m pytest`.
-- [x] Run `ruff check src tests scripts` for v0.1.0. Future releases also
-  include the stable `wairc_rf` package in this check.
-- [x] Run `python scripts/smoke_test.py`.
-- [x] Run `wairc demo` and validate its generated submission.
-- [x] Build the source and wheel distributions and inspect their contents.
+- [x] `python -m pytest` passes locally.
+- [x] `python scripts/smoke_test.py` passes locally.
+- [x] `ruff check src wairc_rf tests scripts` passes locally.
+- [x] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [x] `wairc --version`, `wairc --help`, and the synthetic demo pass locally.
+- [x] Source and wheel distributions build successfully.
+- [x] The wheel installs in an isolated environment with runtime dependencies;
+  `pip check`, `wairc --version`, `wairc --help`, and `wairc demo` pass there.
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12, including package
+  and isolated-wheel checks on Python 3.12.
+- [x] Release contents are inspected for data, model weights, caches, secrets,
+  and private paths.
 
 ## Release metadata
 
-- [x] Update `CHANGELOG.md` with the release date and verified changes.
-- [x] Confirm the version in `pyproject.toml` and `src/__init__.py`.
-- [x] Confirm CI passes on release-candidate commit `007ac2f` (GitHub Actions
-  CI run 31568590301).
-- [x] Create and push annotated tag `v0.1.0` for commit `12f70ff`.
-- [x] Publish [v0.1.0 release notes](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.1.0)
-  that distinguish synthetic checks from real-data or competition results.
+- [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.2.0`.
+- [x] `CHANGELOG.md`, `ROADMAP.md`, README links, migration boundaries, and
+  `docs/releases/v0.2.0.md` are updated.
+- [ ] Annotated tag `v0.2.0` is created and pushed for the verified release
+  commit after the release PR is merged.
+- [ ] GitHub release notes distinguish synthetic checks from real-data or
+  competition results and list remaining follow-up work.
 
-For future releases, complete every maintainer-decision item and document any
-remaining verification gap before publishing.
+## Future release gate
+
+For future releases, repeat every maintainer-decision and verification item,
+record any remaining gap, and do not publish capabilities that are still only
+planned in `ROADMAP.md`.
