@@ -5,6 +5,10 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+Future changes will be listed here before the next release.
+
+## [0.2.0] - 2026-08-13
+
 ### Added
 
 - Versioned `cache-v1` STFT cache metadata with transform/shape validation and
@@ -28,6 +32,15 @@ verified repository changes; they do not imply a release has been published.
   transform behavior.
 - Citation metadata, support guidance, and a project code of conduct.
 
+### Compatibility
+
+- Existing `src.*` entry points, legacy unversioned checkpoints, OOF files,
+  inference rules, and STFT caches remain supported where their validation
+  rules allow.
+- The 0..8 label mapping, interleaved IQ parsing, missing-node semantics, STFT
+  behavior, fold splitting, inference rules, ensemble weighting, and submission
+  text format are unchanged.
+
 ### Changed
 
 - CI now tests Python 3.10, 3.11, and 3.12, verifies the built wheel from an
@@ -35,8 +48,8 @@ verified repository changes; they do not imply a release has been published.
   public API documentation.
 - Contributor setup is CPU-first, with CUDA dependencies documented as
   optional.
-- Architecture, roadmap, release, and README documentation now reflect the
-  published v0.1.0 state.
+- Architecture, roadmap, release, and README documentation now describe the
+  artifact governance milestone and its remaining interoperability work.
 
 ## [0.1.0] - 2026-08-12
 

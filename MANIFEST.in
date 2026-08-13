@@ -11,5 +11,6 @@ include docs/public-api.md
 include docs/release-checklist.md
 include docs/reproducibility.md
 include docs/releases/v0.1.0.md
+include docs/releases/v0.2.0.md
 include docs/冲高分STFT频谱图方案说明.md
 include docs/数据集说明.md
