@@ -46,3 +46,9 @@ def test_dataset_handles_missing_nodes_and_returns_fixed_shapes(tmp_path):
     assert sample["node_mask"].tolist() == [1.0, 0.0, 1.0]
     assert sample["label"].tolist() == [1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     assert sample["sample_id"].item() == 42
+
+    cache_files = list((tmp_path / "cache" / "train").glob("*.npz"))
+    assert len(cache_files) == 1
+    with np.load(cache_files[0], allow_pickle=False) as cached:
+        assert cached["schemaVersion"].item() == "cache-v1"
+        assert cached["stftProfile"].item() == "stft-v1"
