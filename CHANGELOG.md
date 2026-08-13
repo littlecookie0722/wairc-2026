@@ -7,6 +7,8 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+- Versioned `checkpoint-v1` metadata for newly written model checkpoints and a
+  shared loader that accepts legacy unversioned checkpoint dictionaries.
 - Versioned `run-manifest-v1` provenance records for single-model and k-fold
   training runs, including sanitized Git, runtime, transform, model, and
   output metadata.
