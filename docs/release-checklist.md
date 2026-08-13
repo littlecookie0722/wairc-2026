@@ -1,6 +1,6 @@
 # Release Checklist
 
-This document records the `v0.2.0` release-candidate gate and provides the
+This document records the completed `v0.2.0` release gate and provides the
 baseline for future releases. A checked item is backed by the release
 candidate's local or GitHub verification; it is not a claim about real-data
 performance.
@@ -34,10 +34,11 @@ performance.
 - [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.2.0`.
 - [x] `CHANGELOG.md`, `ROADMAP.md`, README links, migration boundaries, and
   `docs/releases/v0.2.0.md` are updated.
-- [ ] Annotated tag `v0.2.0` is created and pushed for the verified release
-  commit after the release PR is merged.
-- [ ] GitHub release notes distinguish synthetic checks from real-data or
-  competition results and list remaining follow-up work.
+- [x] Annotated tag `v0.2.0` is created and pushed for the verified release
+  commit `dfd7895`.
+- [x] [GitHub release v0.2.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.2.0)
+  distinguishes synthetic checks from real-data or competition results and
+  lists remaining follow-up work.
 
 ## Future release gate
 
