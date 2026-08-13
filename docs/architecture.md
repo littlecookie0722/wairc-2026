@@ -45,6 +45,8 @@ flowchart LR
 | src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
 | src/rule_artifact.py | Versioned inference-rule payloads and legacy-compatible loading | `rule-v1` methods, thresholds, and class count |
 | src/cache_artifact.py | Versioned STFT cache metadata and legacy-compatible tensor loading | `cache-v1` transform, shape, and node-mask contract |
+| src/artifact_inspect.py | Unified artifact detection, validation, and path-redacted summaries | checkpoint/OOF/rule/cache compatibility contracts |
+| src/artifact_cli.py | `wairc artifact inspect|validate` command dispatch and JSON/human output | machine-readable artifact checks and exit status |
 | src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities, select, and write a rule artifact | OOF/rule schemas and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
