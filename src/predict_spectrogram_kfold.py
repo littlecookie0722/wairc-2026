@@ -14,6 +14,7 @@ from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, SUBMISSION_PATH, TEST_ROOT
+from .checkpoint import load_checkpoint
 from .data import load_index
 from .spectrogram import DroneClassifier, DroneSpectrogramDataset, apply_inference_rule, load_inference_rule
 from .submission import write_submission
@@ -104,7 +105,7 @@ def inspect_model_paths(
     groups: dict[tuple[int, int, int, int, int], list[Path]] = defaultdict(list)
     tags: dict[Path, str] = {}
     for path in paths:
-        checkpoint = torch.load(path, map_location="cpu")
+        checkpoint = load_checkpoint(path, map_location="cpu")
         groups[stft_key(checkpoint)].append(path)
         tags[path] = str(checkpoint.get("tag", ""))
         del checkpoint
@@ -122,7 +123,7 @@ def predict_one_model(
     loader: DataLoader,
     device: torch.device,
 ) -> tuple[list[int], np.ndarray]:
-    checkpoint = torch.load(path, map_location=device)
+    checkpoint = load_checkpoint(path, map_location=device)
     model = DroneClassifier(
         num_classes=int(checkpoint.get("num_classes", NUM_CLASSES)),
         arch=str(checkpoint["arch"]),

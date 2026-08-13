@@ -5,7 +5,6 @@ import json
 import random
 import sys
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 import numpy as np
@@ -15,6 +14,7 @@ from sklearn.model_selection import KFold, StratifiedKFold
 from torch.amp import GradScaler
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT
+from .checkpoint import make_checkpoint_payload
 from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
 from .spectrogram import (
     DroneClassifier,
@@ -148,23 +148,22 @@ def train_fold(args: argparse.Namespace, df: pd.DataFrame, train_idx: np.ndarray
             best_probs = val_probs
             best_labels = val_labels
             torch.save(
-                {
-                    "epoch": epoch,
-                    "fold": fold,
-                    "tag": args.tag,
-                    "model_state_dict": model.state_dict(),
-                    "arch": args.arch,
-                    "pretrained": not args.no_pretrained,
-                    "dropout": args.dropout,
-                    "num_classes": NUM_CLASSES,
-                    "n_fft": args.n_fft,
-                    "hop": args.hop,
-                    "target_freq": args.n_fft // 2 + 1,
-                    "target_time": args.target_time,
-                    "cache_time": args.cache_time,
-                    "metrics": val_metrics,
-                    "created_at": datetime.now(timezone.utc).isoformat(),
-                },
+                make_checkpoint_payload(
+                    model_state_dict=model.state_dict(),
+                    arch=args.arch,
+                    pretrained=not args.no_pretrained,
+                    dropout=args.dropout,
+                    num_classes=NUM_CLASSES,
+                    n_fft=args.n_fft,
+                    hop=args.hop,
+                    target_freq=args.n_fft // 2 + 1,
+                    target_time=args.target_time,
+                    cache_time=args.cache_time,
+                    epoch=epoch,
+                    metrics=val_metrics,
+                    fold=fold,
+                    tag=args.tag,
+                ),
                 model_path,
             )
             print(f"Saved fold {fold} best checkpoint: {model_path}")
