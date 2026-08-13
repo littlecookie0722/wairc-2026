@@ -15,6 +15,7 @@ from scipy.signal import stft as scipy_stft
 from torch.utils.data import Dataset
 
 from .config import NUM_CLASSES
+from .cache_artifact import load_cache_artifact, write_cache_artifact
 
 warnings.filterwarnings("ignore", message="Input data is complex")
 
@@ -157,15 +158,20 @@ class DroneSpectrogramDataset(Dataset):
     def _load_or_compute(self, npz_path: Path, sample_id: int) -> tuple[np.ndarray, np.ndarray]:
         cache_path = self._cache_path(sample_id)
         if cache_path is not None and cache_path.exists():
+            if cache_path.stat().st_size > 0:
+                cached = load_cache_artifact(
+                    cache_path,
+                    n_fft=self.n_fft,
+                    hop=self.hop,
+                    target_freq=self.target_freq,
+                    cache_time=self.cache_time,
+                )
+                if cached is not None:
+                    return cached
             try:
-                if cache_path.stat().st_size > 0:
-                    with np.load(cache_path) as data:
-                        return data["x"].astype(np.float32), data["node_mask"].astype(np.float32)
-            except (EOFError, OSError, ValueError, KeyError):
-                try:
-                    cache_path.unlink()
-                except FileNotFoundError:
-                    pass
+                cache_path.unlink()
+            except FileNotFoundError:
+                pass
 
         specs = []
         node_mask = []
@@ -198,7 +204,15 @@ class DroneSpectrogramDataset(Dataset):
         if cache_path is not None:
             tmp_path = cache_path.with_name(f"{cache_path.stem}.{os.getpid()}.tmp{cache_path.suffix}")
             try:
-                np.savez_compressed(tmp_path, x=x.astype(np.float16), node_mask=mask)
+                write_cache_artifact(
+                    tmp_path,
+                    x=x,
+                    node_mask=mask,
+                    n_fft=self.n_fft,
+                    hop=self.hop,
+                    target_freq=self.target_freq,
+                    cache_time=self.cache_time,
+                )
                 os.replace(tmp_path, cache_path)
             finally:
                 if tmp_path.exists():

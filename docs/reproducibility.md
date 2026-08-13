@@ -69,6 +69,12 @@ shared reader accepts the prior top-level rule shapes and missing-file default,
 validates thresholds before prediction, and strips local directory components
 from recorded OOF source filenames.
 
+STFT cache files written by `DroneSpectrogramDataset` use `cache-v1` metadata
+for the `stft-v1` profile, transform dimensions, node count, tensor shape, and
+node mask. A cache with mismatched metadata, invalid arrays, or corrupted bytes
+is discarded and recomputed. Older cache files containing only `x` and
+`node_mask` remain readable when their shape is compatible.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.

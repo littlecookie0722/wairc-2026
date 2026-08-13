@@ -7,6 +7,8 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+- Versioned `cache-v1` STFT cache metadata with transform/shape validation and
+  legacy cache loading.
 - Versioned `rule-v1` inference-rule artifacts with legacy-compatible loading,
   threshold validation, and local source-filename sanitization.
 - Versioned `oof-v1` per-fold prediction artifacts with legacy-compatible
