@@ -162,6 +162,7 @@ Data-free checks:
 
     python -m pytest
     python scripts/smoke_test.py
+    python scripts/cpu_compatibility.py
     ruff check src wairc_rf tests scripts
     wairc demo
 
@@ -169,6 +170,12 @@ The synthetic demo writes its generated IQ data, fitted lightweight model,
 metrics, and validated submission under `outputs/demo/`. Its exact-match value
 only checks deterministic synthetic separability and must not be reported as a
 real-data benchmark or competition result.
+
+The CPU compatibility probe runs the stable interleaved and native-complex
+`stft-v1` paths with exact equality, then performs a randomly initialized
+ResNet18 forward pass explicitly on `torch.device("cpu")`. GitHub Actions runs
+this probe on Python 3.10, 3.11, and 3.12; it does not download weights or
+require competition data.
 
 For a machine-readable synthetic check, run:
 
