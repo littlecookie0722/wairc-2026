@@ -15,36 +15,46 @@ real-data performance.
 
 ## v0.6.0 verification
 
-- [ ] `python -m pytest` passes locally with 156 tests.
-- [ ] `python scripts/smoke_test.py` passes locally.
-- [ ] `python scripts/cpu_compatibility.py` passes locally.
-- [ ] `ruff check src wairc_rf tests scripts` passes locally.
-- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
-- [ ] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
+- [x] `python -m pytest` passes locally with 156 tests.
+- [x] `python scripts/smoke_test.py` passes locally.
+- [x] `python scripts/cpu_compatibility.py` passes locally.
+- [x] `ruff check src wairc_rf tests scripts` passes locally.
+- [x] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [x] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
   the summary command, and the synthetic demo pass locally.
-- [ ] Source and wheel distributions build successfully, include the v0.6.0
+- [x] Source and wheel distributions build successfully, include the v0.6.0
   release documentation, and include the benchmark fixture in the source
   distribution.
-- [ ] The wheel installs in an isolated environment with runtime dependencies;
+- [x] The wheel installs in an isolated environment with runtime dependencies;
   `pip check`, `wairc --version`, `wairc --help`, the demo, summary command,
   and CPU compatibility probe pass there. The benchmark profiles pass in the
   release matrix.
-- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
   commit and tag, including package, fixture, and isolated-wheel checks on
   Python 3.12.
-- [ ] Release contents are inspected for data, model weights, caches, secrets,
+- [x] Release contents are inspected for data, model weights, caches, secrets,
   and private paths.
 
 ## v0.6.0 release metadata
 
-- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.6.0`.
-- [ ] `CHANGELOG.md`, migration boundaries, and
+- [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.6.0`.
+- [x] `CHANGELOG.md`, migration boundaries, and
   `docs/releases/v0.6.0.md` are prepared.
-- [ ] README and `ROADMAP.md` release text and links are prepared for
+- [x] README and `ROADMAP.md` release text and links are prepared for
   `v0.6.0` publication.
-- [ ] Annotated tag `v0.6.0` points to the verified release commit.
-- [ ] GitHub release `v0.6.0` is published with verified notes, wheel/sdist
+- [x] Annotated tag `v0.6.0` points to verified release commit
+  `c86313798d5936cd105df6b89ea9703703d0b16c`.
+- [x] GitHub release [`v0.6.0`](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.6.0)
+  is published with verified notes, wheel/sdist
   assets, and no private assets.
+
+The tag CI run was `31773189061`. Published assets were downloaded again and
+matched these SHA-256 digests:
+
+- `wairc_rf-0.6.0-py3-none-any.whl`:
+  `9902a45b8b13f8f40cba7a7d66ecf9d0bfb6b8ea4432524ffc2df90e08e43ace`
+- `wairc_rf-0.6.0.tar.gz`:
+  `79fb35b26bca20094baea1bff6138b5ad33aaa0077c386ff16ab008cd42f68e2`
 
 ## v0.5.0 verification
 
