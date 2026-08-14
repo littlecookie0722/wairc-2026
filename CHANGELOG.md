@@ -5,18 +5,25 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-### Changed
+Future unreleased changes will be listed here before the next release.
 
-- The reusable `stft-v1` numerical kernel is now isolated from model, dataset,
-  and training code. The legacy `src.spectrogram` entry point reuses the same
-  kernel while retaining its historical non-positive sample-rate fallback.
-- Add a `benchmark-fixture-v1` parameter manifest for the synthetic `cpu-smoke`
-  profile. The redistributable fixture contains no raw IQ, external recording,
-  model weight, or private-label data and pins the expected deterministic
-  signature.
-- Add a CPU compatibility probe that checks public interleaved/native-complex
+## [0.6.0] - 2026-08-14
+
+### Added
+
+- A data-free CPU compatibility probe checks public interleaved/native-complex
   transform equality and a no-weights CPU model forward on Python 3.10, 3.11,
   and 3.12 in CI.
+- A `benchmark-fixture-v1` parameter manifest documents the synthetic
+  `cpu-smoke` profile, its repository-authored provenance, and its expected
+  deterministic signature. The fixture contains no raw IQ, external recording,
+  model weight, or private-label data.
+
+### Changed
+
+- The reusable `stft-v1` numerical kernel is isolated from model, dataset,
+  and training code. The legacy `src.spectrogram` entry point reuses the same
+  kernel while retaining its historical non-positive sample-rate fallback.
 
 ## [0.5.0] - 2026-08-14
 

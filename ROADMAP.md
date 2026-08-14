@@ -77,26 +77,26 @@ was released on 2026-08-14 with the following verified capabilities:
   timing-offset, and signal-gain conditions while keeping synthetic results
   separate from real-data claims.
 
-## Unreleased: transform isolation
+## Released: v0.6.0 interoperability and CPU reproducibility
 
-- The reusable `stft-v1` numerical kernel now lives independently of model,
+- [v0.6.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.6.0)
+  is prepared for publication on 2026-08-14 with the following verified
+  capabilities:
+- The reusable `stft-v1` numerical kernel lives independently of model,
   dataset, and training workflows. The existing `src.spectrogram` wrapper and
   the stable `wairc_rf` API share that kernel, with regression coverage for
   frozen output and legacy sample-rate fallback behavior.
-
-## Unreleased: redistributable benchmark fixture
-
-- `benchmark-fixture-v1` now provides a repository-authored parameter manifest
-  for the synthetic `cpu-smoke` profile. It is included in the source
-  distribution and contains no raw IQ, external recordings, model weights, or
-  private labels; its expected deterministic signature is test-verified.
+- `benchmark-fixture-v1` provides a repository-authored parameter manifest for
+  the synthetic `cpu-smoke` profile. It is included in the source distribution
+  and contains no raw IQ, external recordings, model weights, or private
+  labels; its expected deterministic signature is test-verified.
+- The CPU compatibility probe runs public transform equality and a no-weights
+  CPU model forward on Python 3.10, 3.11, and 3.12 in CI.
 
 ## Unreleased: next interoperability steps
 
-The CPU compatibility probe now runs the public transform equality and a
-no-weights CPU model forward on every supported CI version (3.10, 3.11, and
-3.12). Further compatibility work can extend this probe to additional CPU
-backends without changing the competition workflow.
+- Extend the CPU probe to additional supported backends without changing the
+  competition workflow.
 
 ## Later: public interoperability and benchmarks
 
