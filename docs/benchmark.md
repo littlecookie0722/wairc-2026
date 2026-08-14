@@ -21,7 +21,7 @@ directory and validates its submission. Generated datasets, models, and
 reports are local outputs and should not be committed.
 
 The controlled robustness profile runs the same clean training workflow
-against six test conditions:
+against seven test conditions:
 
     wairc benchmark run --profile robustness-small
 
@@ -30,7 +30,9 @@ against six test conditions:
 - `node0-missing`: the first receiver node is absent for every test sample.
 - `frequency-offset`: a `180 Hz` test frequency offset;
 - `timing-offset`: a `32`-sample test window offset;
-- `low-gain`: a `0.5` test signal gain.
+- `low-gain`: a `0.5` test signal gain;
+- `combined-stress`: `0.20` noise, `180 Hz` frequency offset, a `32`-sample
+  timing offset, and `0.5` signal gain applied together.
 
 Each condition is evaluated independently with its own local demo artifacts.
 
@@ -91,4 +93,6 @@ or competition performance.
 
 Both profiles use two training samples per class so they remain suitable for a
 CPU smoke check. All condition values are synthetic controls and do not imply
-real-world robustness or competition performance.
+real-world robustness or competition performance. The combined condition is a
+controlled interaction check; it is not a calibrated model of a field
+recording.

@@ -79,6 +79,15 @@ BENCHMARK_PROFILES = {
                 "conditions/low-gain",
                 signal_gain=0.5,
             ),
+            BenchmarkCondition(
+                "combined-stress",
+                0.20,
+                MISSING_NODE_PATTERN,
+                "conditions/combined-stress",
+                frequency_offset_hz=180.0,
+                timing_offset_samples=32,
+                signal_gain=0.5,
+            ),
         ),
     ),
 }
