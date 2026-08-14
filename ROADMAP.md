@@ -5,6 +5,20 @@ machine-learning research project. Work is prioritized around reproducibility,
 clear compatibility boundaries, and workflows that contributors can run
 without access to private data.
 
+## Released: v0.3.0 artifact inspection and integrity
+
+[v0.3.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.3.0)
+was released on 2026-08-14 with the following verified capabilities:
+
+- Path-redacted inspection and validation for supported checkpoint, OOF,
+  inference-rule, and STFT cache artifacts.
+- Read-only run-manifest validation across declared outputs, artifact types,
+  class/STFT/fold metadata, and rule-to-OOF source linkage.
+- Optional `artifact-index-v1` references with exact output coverage, SHA-256,
+  byte-size, schema, fold, and tag validation.
+- Backward compatibility for supported legacy artifacts and
+  `run-manifest-v1` files without an artifact index.
+
 ## Released: v0.2.0 reproducible artifact foundation
 
 [v0.2.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.2.0)
@@ -31,14 +45,8 @@ was released on 2026-08-12 with the following foundations:
   submission boundaries.
 - Architecture, reproducibility, contribution, and security documentation.
 
-## Next: interoperability and stable interfaces
+## Next: stable API and data interoperability
 
-- [x] Extend the artifact inspection and compatibility CLI with read-only
-  cross-artifact linkage checks while keeping local paths and restricted data
-  out of public artifacts.
-- [x] Link completed training artifacts through optional content-addressed run
-  metadata while keeping local paths and restricted data out of public
-  artifacts.
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
 - Define a generic public dataset adapter while preserving the competition
