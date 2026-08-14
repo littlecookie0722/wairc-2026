@@ -70,6 +70,22 @@
         "signal_gain": 1.0
       },
       {
+        "name": "node1-missing",
+        "noise_std": 0.08,
+        "missing_node_pattern": [1],
+        "frequency_offset_hz": 0.0,
+        "timing_offset_samples": 0,
+        "signal_gain": 1.0
+      },
+      {
+        "name": "node2-missing",
+        "noise_std": 0.08,
+        "missing_node_pattern": [2],
+        "frequency_offset_hz": 0.0,
+        "timing_offset_samples": 0,
+        "signal_gain": 1.0
+      },
+      {
         "name": "frequency-offset",
         "noise_std": 0.08,
         "missing_node_pattern": [0, 1, 2, null],
@@ -105,6 +121,6 @@
   },
   "expected": {
     "report_schema": "benchmark-report-v1",
-    "deterministic_signature": "074049d5bf1c693a0a1bbf8b076be0153771ff2d9342c27f964b81fd46d49435"
+    "deterministic_signature": "8a52835e956b876a04735c4dd5e0e5ac9fdebeabca9dfe3584db47d5a0dd3adf"
   }
 }

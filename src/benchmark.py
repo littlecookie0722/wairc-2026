@@ -58,6 +58,8 @@ BENCHMARK_PROFILES = {
             BenchmarkCondition("baseline", NOISE_STD, MISSING_NODE_PATTERN, "conditions/baseline"),
             BenchmarkCondition("high-noise", 0.20, MISSING_NODE_PATTERN, "conditions/high-noise"),
             BenchmarkCondition("node0-missing", NOISE_STD, (0,), "conditions/node0-missing"),
+            BenchmarkCondition("node1-missing", NOISE_STD, (1,), "conditions/node1-missing"),
+            BenchmarkCondition("node2-missing", NOISE_STD, (2,), "conditions/node2-missing"),
             BenchmarkCondition(
                 "frequency-offset",
                 NOISE_STD,
