@@ -3,9 +3,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import time
 from dataclasses import dataclass
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 from .config import NUM_CLASSES, RANDOM_SEED
 from .synthetic_demo import (
@@ -150,6 +151,132 @@ def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
+def _number(value: object, field: str) -> float:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(f"Report field {field!r} must be numeric")
+    number = float(value)
+    if not math.isfinite(number):
+        raise ValueError(f"Report field {field!r} must be finite")
+    return number
+
+
+def _metric_summary(metrics: object) -> dict[str, object]:
+    if not isinstance(metrics, dict):
+        raise ValueError("Report metrics must be an object")
+    exact_match = _number(metrics.get("exact_match_accuracy"), "exact_match_accuracy")
+    macro_f1 = _number(metrics.get("macro_f1"), "macro_f1")
+    threshold = _number(metrics.get("threshold"), "threshold")
+    recall = metrics.get("per_class_recall")
+    if not isinstance(recall, list) or len(recall) != NUM_CLASSES:
+        raise ValueError(f"Report per_class_recall must contain {NUM_CLASSES} values")
+    recall_values = [_number(value, "per_class_recall") for value in recall]
+    if any(not 0.0 <= value <= 1.0 for value in [exact_match, macro_f1, threshold, *recall_values]):
+        raise ValueError("Report metrics must be between 0 and 1")
+    test_samples = metrics.get("test_samples")
+    if isinstance(test_samples, bool) or not isinstance(test_samples, int) or test_samples <= 0:
+        raise ValueError("Report test_samples must be a positive integer")
+    return {
+        "exact_match_accuracy": exact_match,
+        "macro_f1": macro_f1,
+        "mean_recall": sum(recall_values) / len(recall_values),
+        "min_recall": min(recall_values),
+        "threshold": threshold,
+        "test_samples": test_samples,
+    }
+
+
+def _relative_name(value: str, field: str) -> str:
+    path = PureWindowsPath(value)
+    if path.is_absolute() or path.drive or ".." in path.parts:
+        raise ValueError(f"Report field {field!r} must be a relative path")
+    return value.replace("\\", "/")
+
+
+def render_benchmark_summary(report: object) -> str:
+    if not isinstance(report, dict) or report.get("schemaVersion") != BENCHMARK_REPORT_SCHEMA:
+        raise ValueError(f"Expected {BENCHMARK_REPORT_SCHEMA} report")
+    profile = report.get("profile")
+    status = report.get("status")
+    signature = report.get("deterministic_signature")
+    seed = report.get("seed")
+    if not isinstance(profile, str) or not profile:
+        raise ValueError("Report profile must be a non-empty string")
+    if not isinstance(status, str) or not status:
+        raise ValueError("Report status must be a non-empty string")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("Report seed must be an integer")
+    if not isinstance(signature, str) or not signature:
+        raise ValueError("Report deterministic_signature must be a non-empty string")
+
+    raw_metrics = report.get("metrics")
+    rows: list[tuple[str, dict[str, object]]] = []
+    if isinstance(raw_metrics, dict) and "conditions" in raw_metrics:
+        conditions = raw_metrics["conditions"]
+        if not isinstance(conditions, list) or not conditions:
+            raise ValueError("Report conditions must be a non-empty list")
+        for condition in conditions:
+            if not isinstance(condition, dict) or not isinstance(condition.get("name"), str):
+                raise ValueError("Each report condition must have a name")
+            rows.append((condition["name"], _metric_summary(condition.get("metrics"))))
+    else:
+        rows.append((profile, _metric_summary(raw_metrics)))
+
+    lines = [
+        "# Synthetic benchmark summary",
+        "",
+        f"- Profile: `{profile}`",
+        f"- Seed: `{seed}`",
+        f"- Status: **{status.upper()}**",
+        "- Synthetic-only: `true`",
+        f"- Deterministic signature: `{signature}`",
+    ]
+    manifest = report.get("manifest")
+    if isinstance(manifest, str) and manifest:
+        lines.append(f"- Manifest: `{_relative_name(manifest, 'manifest')}`")
+    lines.extend(
+        [
+            "",
+            "## Metrics",
+            "",
+            "| Condition | Exact-match | Macro F1 | Mean recall | Min recall | Threshold | Test samples |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: |",
+        ]
+    )
+    for name, metrics in rows:
+        lines.append(
+            f"| `{name}` | {metrics['exact_match_accuracy']:.3f} | "
+            f"{metrics['macro_f1']:.3f} | {metrics['mean_recall']:.3f} | "
+            f"{metrics['min_recall']:.3f} | {metrics['threshold']:.3f} | {metrics['test_samples']} |"
+        )
+
+    artifacts = report.get("artifacts")
+    if isinstance(artifacts, list) and artifacts:
+        lines.extend(["", "## Relative artifacts", ""])
+        lines.extend(
+            f"- `{_relative_name(artifact, 'artifacts')}`"
+            for artifact in artifacts
+            if isinstance(artifact, str)
+        )
+    lines.extend(
+        [
+            "",
+            "> This summary reports a functional check on generated synthetic data; it is not a real-data benchmark or competition score.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_benchmark_summary(report_path: Path, output_path: Path | None = None) -> Path:
+    report_path = Path(report_path)
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    summary = render_benchmark_summary(report)
+    output_path = report_path.with_name("benchmark-summary.md") if output_path is None else Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path.write_text(summary, encoding="utf-8")
+    return output_path
+
+
 def run_benchmark(
     output_dir: Path,
     profile: str = "cpu-smoke",
@@ -237,11 +364,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     run_parser.add_argument("--profile", choices=sorted(BENCHMARK_PROFILES), default="cpu-smoke")
     run_parser.add_argument("--output-dir", type=Path, default=Path("outputs/benchmark"))
     run_parser.add_argument("--seed", type=int, default=RANDOM_SEED)
+    summarize_parser = subparsers.add_parser("summarize", help="Render a Markdown summary from a benchmark report")
+    summarize_parser.add_argument("report_path", type=Path)
+    summarize_parser.add_argument("--output", type=Path)
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> None:
     args = parse_args(argv)
+    if args.action == "summarize":
+        output_path = write_benchmark_summary(args.report_path, args.output)
+        print(f"Benchmark summary: {output_path.resolve()}")
+        return
     result = run_benchmark(args.output_dir, profile=args.profile, seed=args.seed)
     print("Synthetic benchmark passed")
     print(f"Profile: {result.profile}")

@@ -7,6 +7,11 @@ verified repository changes; they do not imply a release has been published.
 
 Future unreleased changes will be listed here before the next release.
 
+### Added
+
+- `wairc benchmark summarize` validates `benchmark-report-v1` and renders a
+  compact path-safe Markdown summary for CPU and robustness profiles.
+
 ## [0.4.0] - 2026-08-14
 
 ### Added

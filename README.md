@@ -50,6 +50,8 @@ ensemble inference -> 9-value submission
 - Synthetic CPU end-to-end demonstration that requires no competition data.
 - Reproducible `wairc benchmark run --profile cpu-smoke` and controlled
   `robustness-small` checks with path-safe manifest/report files.
+- `wairc benchmark summarize` for compact Markdown review summaries from
+  machine-readable benchmark reports.
 - Archived early baselines under archived_baselines.
 
 The current public repository is intentionally still a competition-oriented
