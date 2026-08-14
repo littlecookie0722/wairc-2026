@@ -14,6 +14,9 @@ verified repository changes; they do not imply a release has been published.
   profile. The redistributable fixture contains no raw IQ, external recording,
   model weight, or private-label data and pins the expected deterministic
   signature.
+- Add a CPU compatibility probe that checks public interleaved/native-complex
+  transform equality and a no-weights CPU model forward on Python 3.10, 3.11,
+  and 3.12 in CI.
 
 ## [0.5.0] - 2026-08-14
 

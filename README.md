@@ -158,6 +158,7 @@ workflow; existing `src.*` entry points remain compatible wrappers.
 
     python -m pytest
     python scripts/smoke_test.py
+    python scripts/cpu_compatibility.py
     wairc demo
     wairc benchmark run --profile cpu-smoke
 

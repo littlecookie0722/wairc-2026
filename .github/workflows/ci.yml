@@ -60,6 +60,9 @@ jobs:
       - name: Smoke test
         run: python scripts/smoke_test.py
 
+      - name: CPU compatibility probe
+        run: python scripts/cpu_compatibility.py
+
       - name: Synthetic end-to-end demo
         run: >-
           wairc demo

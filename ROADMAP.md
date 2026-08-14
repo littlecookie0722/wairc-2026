@@ -93,11 +93,13 @@ was released on 2026-08-14 with the following verified capabilities:
 
 ## Unreleased: next interoperability steps
 
-- Expand CPU compatibility tests across supported Python versions.
+The CPU compatibility probe now runs the public transform equality and a
+no-weights CPU model forward on every supported CI version (3.10, 3.11, and
+3.12). Further compatibility work can extend this probe to additional CPU
+backends without changing the competition workflow.
 
 ## Later: public interoperability and benchmarks
 
-- Expand CPU compatibility tests across supported Python versions.
 - Expand robustness protocols beyond the current six synthetic conditions.
 
 Only the released sections describe completed capability. All other items are
