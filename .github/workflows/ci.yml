@@ -99,6 +99,7 @@ jobs:
               names = source.getnames()
           assert any(name.endswith("/docs/public-api.md") for name in names)
           assert any(name.endswith("/docs/benchmark.md") for name in names)
+          assert any(name.endswith("/tests/fixtures/benchmark/synthetic_iq_v1.json") for name in names)
           PY
 
       - name: Verify wheel from an isolated directory

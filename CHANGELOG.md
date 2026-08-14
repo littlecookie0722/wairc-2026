@@ -10,6 +10,10 @@ verified repository changes; they do not imply a release has been published.
 - The reusable `stft-v1` numerical kernel is now isolated from model, dataset,
   and training code. The legacy `src.spectrogram` entry point reuses the same
   kernel while retaining its historical non-positive sample-rate fallback.
+- Add a `benchmark-fixture-v1` parameter manifest for the synthetic `cpu-smoke`
+  profile. The redistributable fixture contains no raw IQ, external recording,
+  model weight, or private-label data and pins the expected deterministic
+  signature.
 
 ## [0.5.0] - 2026-08-14
 
