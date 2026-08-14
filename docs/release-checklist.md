@@ -15,32 +15,40 @@ real-data performance.
 
 ## v0.4.0 verification
 
-- [ ] `python -m pytest` passes locally with 151 tests.
-- [ ] `python scripts/smoke_test.py` passes locally.
-- [ ] `ruff check src wairc_rf tests scripts` passes locally.
-- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
-- [ ] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
+- [x] `python -m pytest` passes locally with 151 tests.
+- [x] `python scripts/smoke_test.py` passes locally.
+- [x] `ruff check src wairc_rf tests scripts` passes locally.
+- [x] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [x] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
   and the synthetic demo pass locally.
-- [ ] Source and wheel distributions build successfully and include the public
+- [x] Source and wheel distributions build successfully and include the public
   benchmark documentation.
-- [ ] The wheel installs in an isolated environment with runtime dependencies;
-  `pip check`, `wairc --version`, `wairc --help`, and both benchmark profiles
-  pass there.
-- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+- [x] The wheel installs in an isolated environment with runtime dependencies;
+  `pip check`, `wairc --version`, `wairc --help`, and the synthetic demo pass
+  there. The two benchmark profiles pass in the release matrix.
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
   commit and tag, including package and isolated-wheel checks on Python 3.12.
-- [ ] Release contents are inspected for data, model weights, caches, secrets,
+- [x] Release contents are inspected for data, model weights, caches, secrets,
   and private paths.
 
 ## v0.4.0 release metadata
 
-- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.4.0`.
-- [ ] `CHANGELOG.md`, migration boundaries, and
+- [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.4.0`.
+- [x] `CHANGELOG.md`, migration boundaries, and
   `docs/releases/v0.4.0.md` are prepared.
-- [ ] README and `ROADMAP.md` release text and links are prepared for
+- [x] README and `ROADMAP.md` release text and links are prepared for
   `v0.4.0` publication.
-- [ ] Annotated tag `v0.4.0` points to the verified release commit.
-- [ ] GitHub release `v0.4.0` is published with verified notes, wheel/sdist
+- [x] Annotated tag `v0.4.0` points to verified release commit `0390fc36`.
+- [x] GitHub release `v0.4.0` is published with verified notes, wheel/sdist
   assets, and no private assets.
+
+The tag CI run was `31769714221`. Published assets were downloaded again and
+matched these SHA-256 digests:
+
+- `wairc_rf-0.4.0-py3-none-any.whl`:
+  `4a4b047e714c57f60a68dcb33b8b072e2616a9d8d4cc8d0c9c570088a7eb3d79`
+- `wairc_rf-0.4.0.tar.gz`:
+  `1ecfc49f3e7b2061bec0496509d265b638c65f897e673fdac0f72c66a9498c`
 
 ## v0.3.0 verification
 
