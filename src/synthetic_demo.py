@@ -29,6 +29,9 @@ SIGNAL_SAMPLE_COUNT = 2048
 NOISE_STD = 0.08
 NODE_FREQUENCY_OFFSET = 3.0
 MISSING_NODE_PATTERN: tuple[int | None, ...] = (0, 1, 2, None)
+DEFAULT_FREQUENCY_OFFSET_HZ = 0.0
+DEFAULT_TIMING_OFFSET_SAMPLES = 0
+DEFAULT_SIGNAL_GAIN = 1.0
 SYNTHETIC_N_FFT = 128
 SYNTHETIC_HOP = 32
 SYNTHETIC_TARGET_FREQ = 65
@@ -83,17 +86,20 @@ def _make_signal(
     node: int,
     rng: np.random.Generator,
     noise_std: float = NOISE_STD,
+    frequency_offset_hz: float = DEFAULT_FREQUENCY_OFFSET_HZ,
+    timing_offset_samples: int = DEFAULT_TIMING_OFFSET_SAMPLES,
+    signal_gain: float = DEFAULT_SIGNAL_GAIN,
 ) -> np.ndarray:
-    times = np.arange(SIGNAL_SAMPLE_COUNT, dtype=np.float64) / SAMPLE_RATE
+    times = (np.arange(SIGNAL_SAMPLE_COUNT, dtype=np.float64) + timing_offset_samples) / SAMPLE_RATE
     signal = np.zeros(SIGNAL_SAMPLE_COUNT, dtype=np.complex128)
     for label in labels:
         phase = rng.uniform(0.0, 2.0 * np.pi)
-        node_offset = (node - 1) * NODE_FREQUENCY_OFFSET
+        node_offset = (node - 1) * NODE_FREQUENCY_OFFSET + frequency_offset_hz
         signal += np.exp(2j * np.pi * (CLASS_FREQUENCIES[label] + node_offset) * times + 1j * phase)
     noise = rng.normal(0.0, noise_std, SIGNAL_SAMPLE_COUNT) + 1j * rng.normal(
         0.0, noise_std, SIGNAL_SAMPLE_COUNT
     )
-    return _interleave_iq(signal + noise)
+    return _interleave_iq(signal * signal_gain + noise)
 
 
 def _write_dataset(
@@ -103,6 +109,9 @@ def _write_dataset(
     include_labels: bool,
     noise_std: float = NOISE_STD,
     missing_node_pattern: tuple[int | None, ...] = MISSING_NODE_PATTERN,
+    frequency_offset_hz: float = DEFAULT_FREQUENCY_OFFSET_HZ,
+    timing_offset_samples: int = DEFAULT_TIMING_OFFSET_SAMPLES,
+    signal_gain: float = DEFAULT_SIGNAL_GAIN,
 ) -> None:
     iq_dir = root / "iq_sample"
     iq_dir.mkdir(parents=True, exist_ok=True)
@@ -119,7 +128,15 @@ def _write_dataset(
         for node in range(3):
             present = node != missing_node
             arrays[f"iq_node{node}"] = (
-                _make_signal(labels, node, rng, noise_std=noise_std)
+                _make_signal(
+                    labels,
+                    node,
+                    rng,
+                    noise_std=noise_std,
+                    frequency_offset_hz=frequency_offset_hz,
+                    timing_offset_samples=timing_offset_samples,
+                    signal_gain=signal_gain,
+                )
                 if present
                 else np.asarray([], dtype=np.int16)
             )
@@ -188,16 +205,32 @@ def _select_threshold(probabilities: np.ndarray, labels: np.ndarray) -> float:
 def _normalize_test_condition(
     noise_std: float | None,
     missing_node_pattern: tuple[int | None, ...] | None,
-) -> tuple[float, tuple[int | None, ...]]:
+    frequency_offset_hz: float | None,
+    timing_offset_samples: int | None,
+    signal_gain: float | None,
+) -> tuple[float, tuple[int | None, ...], float, int, float]:
     normalized_noise = NOISE_STD if noise_std is None else float(noise_std)
     normalized_pattern = MISSING_NODE_PATTERN if missing_node_pattern is None else tuple(missing_node_pattern)
+    normalized_frequency = (
+        DEFAULT_FREQUENCY_OFFSET_HZ if frequency_offset_hz is None else float(frequency_offset_hz)
+    )
+    normalized_timing = (
+        DEFAULT_TIMING_OFFSET_SAMPLES if timing_offset_samples is None else timing_offset_samples
+    )
+    normalized_gain = DEFAULT_SIGNAL_GAIN if signal_gain is None else float(signal_gain)
     if not np.isfinite(normalized_noise) or normalized_noise < 0.0:
         raise ValueError("noise_std must be a finite non-negative number")
     if not normalized_pattern:
         raise ValueError("missing_node_pattern must not be empty")
     if any(node is not None and node not in {0, 1, 2} for node in normalized_pattern):
         raise ValueError("missing_node_pattern entries must be 0, 1, 2, or None")
-    return normalized_noise, normalized_pattern
+    if not np.isfinite(normalized_frequency):
+        raise ValueError("frequency_offset_hz must be finite")
+    if isinstance(normalized_timing, bool) or not isinstance(normalized_timing, int):
+        raise ValueError("timing_offset_samples must be an integer")
+    if not np.isfinite(normalized_gain) or normalized_gain <= 0.0:
+        raise ValueError("signal_gain must be a finite positive number")
+    return normalized_noise, normalized_pattern, normalized_frequency, normalized_timing, normalized_gain
 
 
 def run_demo(
@@ -206,11 +239,24 @@ def run_demo(
     train_samples_per_class: int = 4,
     test_noise_std: float | None = None,
     test_missing_node_pattern: tuple[int | None, ...] | None = None,
+    test_frequency_offset_hz: float | None = None,
+    test_timing_offset_samples: int | None = None,
+    test_signal_gain: float | None = None,
 ) -> DemoResult:
     if train_samples_per_class < 2:
         raise ValueError("train_samples_per_class must be at least 2")
-    test_noise_std, test_missing_node_pattern = _normalize_test_condition(
-        test_noise_std, test_missing_node_pattern
+    (
+        test_noise_std,
+        test_missing_node_pattern,
+        test_frequency_offset_hz,
+        test_timing_offset_samples,
+        test_signal_gain,
+    ) = _normalize_test_condition(
+        test_noise_std,
+        test_missing_node_pattern,
+        test_frequency_offset_hz,
+        test_timing_offset_samples,
+        test_signal_gain,
     )
 
     output_dir = Path(output_dir)
@@ -232,6 +278,9 @@ def run_demo(
         include_labels=True,
         noise_std=NOISE_STD,
         missing_node_pattern=MISSING_NODE_PATTERN,
+        frequency_offset_hz=DEFAULT_FREQUENCY_OFFSET_HZ,
+        timing_offset_samples=DEFAULT_TIMING_OFFSET_SAMPLES,
+        signal_gain=DEFAULT_SIGNAL_GAIN,
     )
     _write_dataset(
         test_root,
@@ -240,6 +289,9 @@ def run_demo(
         include_labels=False,
         noise_std=test_noise_std,
         missing_node_pattern=test_missing_node_pattern,
+        frequency_offset_hz=test_frequency_offset_hz,
+        timing_offset_samples=test_timing_offset_samples,
+        signal_gain=test_signal_gain,
     )
     train_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(train_root, has_labels=True))
     test_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(test_root, has_labels=False))

@@ -177,10 +177,11 @@ signature. This verifies the public CPU workflow only and does not estimate
 real RF or competition performance.
 
 The controlled `robustness-small` profile uses the same clean training split
-for three test conditions: the default baseline, a higher noise standard
-deviation of `0.20`, and test samples with node 0 missing. Its report keeps the
-metrics and relative artifacts nested under each condition, so the comparison
-does not depend on local absolute paths.
+for six test conditions: the default baseline, a higher noise standard
+deviation of `0.20`, node 0 missing, a `180 Hz` frequency offset, a 32-sample
+timing offset, and a `0.5` signal gain. Its report keeps the metrics and
+relative artifacts nested under each condition, so the comparison does not
+depend on local absolute paths.
 
 For a human-readable review artifact, render the report without copying local
 paths into the document:

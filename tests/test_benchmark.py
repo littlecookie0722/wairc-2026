@@ -68,11 +68,20 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
         "baseline",
         "high-noise",
         "node0-missing",
+        "frequency-offset",
+        "timing-offset",
+        "low-gain",
     ]
+    assert manifest["evaluation"]["conditions"][3]["frequency_offset_hz"] == 180.0
+    assert manifest["evaluation"]["conditions"][4]["timing_offset_samples"] == 32
+    assert manifest["evaluation"]["conditions"][5]["signal_gain"] == 0.5
     assert [condition["name"] for condition in conditions] == [
         "baseline",
         "high-noise",
         "node0-missing",
+        "frequency-offset",
+        "timing-offset",
+        "low-gain",
     ]
     assert all(0.0 <= condition["metrics"]["exact_match_accuracy"] <= 1.0 for condition in conditions)
     assert all(len(condition["metrics"]["per_class_recall"]) == 9 for condition in conditions)
@@ -104,5 +113,8 @@ def test_benchmark_summary_renders_cpu_and_robustness_reports(tmp_path):
     assert "| `baseline` |" in robust_text
     assert "| `high-noise` |" in robust_text
     assert "| `node0-missing` |" in robust_text
+    assert "| `frequency-offset` |" in robust_text
+    assert "| `timing-offset` |" in robust_text
+    assert "| `low-gain` |" in robust_text
     assert str(tmp_path) not in cpu_text
     assert str(tmp_path) not in robust_text

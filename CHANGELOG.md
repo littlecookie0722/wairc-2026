@@ -11,6 +11,8 @@ Future unreleased changes will be listed here before the next release.
 
 - `wairc benchmark summarize` validates `benchmark-report-v1` and renders a
   compact path-safe Markdown summary for CPU and robustness profiles.
+- `robustness-small` now includes controlled frequency-offset, timing-offset,
+  and signal-gain conditions in addition to noise and missing-node checks.
 
 ## [0.4.0] - 2026-08-14
 

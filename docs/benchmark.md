@@ -28,6 +28,9 @@ against three test conditions:
 - `baseline`: the default noise and periodic missing-node pattern;
 - `high-noise`: noise standard deviation `0.20` with the default node pattern;
 - `node0-missing`: the first receiver node is absent for every test sample.
+- `frequency-offset`: a `180 Hz` test frequency offset;
+- `timing-offset`: a `32`-sample test window offset;
+- `low-gain`: a `0.5` test signal gain.
 
 Each condition is evaluated independently with its own local demo artifacts.
 
@@ -72,5 +75,5 @@ signature match does not establish real-data accuracy, hardware equivalence,
 or competition performance.
 
 Both profiles use two training samples per class so they remain suitable for a
-CPU smoke check. Frequency-offset, timing-offset, and gain perturbations are
-follow-up work.
+CPU smoke check. All condition values are synthetic controls and do not imply
+real-world robustness or competition performance.
