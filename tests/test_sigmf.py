@@ -1,9 +1,15 @@
 import json
 from pathlib import Path
 
+import numpy as np
 import pytest
 
-from wairc_rf.sigmf import SigMFCapture, SigMFMetadata, parse_sigmf_metadata
+from wairc_rf.sigmf import (
+    SigMFCapture,
+    SigMFDatasetAdapter,
+    SigMFMetadata,
+    parse_sigmf_metadata,
+)
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "sigmf" / "minimal.sigmf-meta"
@@ -88,3 +94,66 @@ def test_sigmf_parser_does_not_expose_absolute_metadata_path_in_missing_error(tm
     with pytest.raises(FileNotFoundError, match=r"missing\.sigmf-meta") as error:
         parse_sigmf_metadata(missing)
     assert str(tmp_path) not in str(error.value)
+
+
+def test_sigmf_dataset_adapter_loads_interleaved_integer_iq_lazily(tmp_path):
+    document = _valid_document()
+    document["global"]["core:datatype"] = "ci16_le"
+    metadata_path = _write_metadata(tmp_path, document)
+    np.asarray([1, -1, 2, -2], dtype="<i2").tofile(tmp_path / "sample.sigmf-data")
+
+    adapter = SigMFDatasetAdapter(metadata_path)
+    sample = adapter[0]
+
+    assert adapter.sample_ids == ("sample",)
+    assert sample.labels is None
+    assert sample.node_mask == (True,)
+    assert sample.nodes[0].iq_format == "interleaved"
+    assert sample.nodes[0].sample_rate == 2_000_000.0
+    np.testing.assert_array_equal(sample.nodes[0].iq, [1, -1, 2, -2])
+
+
+def test_sigmf_dataset_adapter_loads_native_complex_float_iq(tmp_path):
+    document = _valid_document()
+    document["global"]["core:datatype"] = "cf32_le"
+    metadata_path = _write_metadata(tmp_path, document)
+    np.asarray([1 + 2j, 3 + 4j], dtype="<c8").tofile(tmp_path / "sample.sigmf-data")
+
+    sample = SigMFDatasetAdapter(metadata_path)[-1]
+
+    assert sample.nodes[0].iq_format == "complex"
+    np.testing.assert_array_equal(sample.nodes[0].iq, [1 + 2j, 3 + 4j])
+
+
+@pytest.mark.parametrize(
+    ("setup", "error_type", "message"),
+    [
+        (lambda path: None, FileNotFoundError, "dataset file not found"),
+        (lambda path: path.write_bytes(b"\x00"), ValueError, "byte length"),
+        (lambda path: np.asarray([1], dtype="<i2").tofile(path), ValueError, "complete I/Q pairs"),
+    ],
+)
+def test_sigmf_dataset_adapter_rejects_missing_or_malformed_raw_data(
+    tmp_path, setup, error_type, message
+):
+    document = _valid_document()
+    document["global"]["core:datatype"] = "ci16_le"
+    metadata_path = _write_metadata(tmp_path, document)
+    data_path = tmp_path / "sample.sigmf-data"
+    if error_type is FileNotFoundError:
+        with pytest.raises(error_type, match=message):
+            SigMFDatasetAdapter(metadata_path)
+        return
+    setup(data_path)
+    adapter = SigMFDatasetAdapter(metadata_path)
+
+    with pytest.raises(error_type, match=message):
+        adapter[0]
+
+
+def test_sigmf_dataset_adapter_rejects_metadata_only_recordings(tmp_path):
+    document = _valid_document()
+    document["global"]["core:metadata_only"] = True
+
+    with pytest.raises(ValueError, match="metadata_only"):
+        SigMFDatasetAdapter(_write_metadata(tmp_path, document))

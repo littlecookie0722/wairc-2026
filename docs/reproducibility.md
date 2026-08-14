@@ -82,10 +82,11 @@ points remain supported while callers migrate deliberately.
 with stable order and unique IDs. It is intended for data-free tests and future
 benchmark fixtures; it does not claim to reproduce real RF recordings.
 
-The experimental SigMF parser is metadata-only in the current phase. The
+The experimental SigMF parser and recording adapter are read-only. The
 synthetic fixture under `tests/fixtures/sigmf/` records the supported datatype,
 sample-rate, capture, and annotation fields without adding a raw recording to
-the repository. Raw SigMF import remains a separate verification phase.
+the repository. The adapter loads one local recording on sample access and
+remains separate from the competition label and submission paths.
 
 Each k-fold OOF file uses the `oof-v1` schema. It retains the historical
 `probs`, `labels`, `indices`, `fold`, `sample_ids`, and `metrics` arrays while

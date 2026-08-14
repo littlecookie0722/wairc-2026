@@ -17,6 +17,8 @@ Current unreleased changes are listed here before the next release.
   `CompetitionDatasetAdapter` for the existing three-node CSV/NPZ schema.
 - Experimental metadata-only SigMF subset parser and a synthetic fixture for
   single-channel complex recordings.
+- Read-only `SigMFDatasetAdapter` support for one local single-channel recording
+  with supported complex integer or complex float IQ datatypes.
 
 ### Compatibility
 
