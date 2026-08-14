@@ -118,15 +118,22 @@ namespace:
 ```python
 import numpy as np
 
-from wairc_rf import STFTConfig, iq_to_spectrogram
+from wairc_rf import STFTConfig, complex_iq_to_spectrogram, iq_to_spectrogram
 
 interleaved_iq = np.fromfile("recording.int16", dtype=np.int16)
 config = STFTConfig(n_fft=512, hop=128, target_freq=257)
 spectrogram = iq_to_spectrogram(interleaved_iq, sample_rate=125_000_000, config=config)
+
+native_complex_iq = np.fromfile("recording.complex64", dtype=np.complex64)
+same_profile = complex_iq_to_spectrogram(
+    native_complex_iq,
+    sample_rate=125_000_000,
+    config=config,
+)
 ```
 
 See the [public Python API](docs/public-api.md) for the `stft-v1` compatibility
-contract and input requirements.
+contract, complex/interleaved input requirements, and exact-equivalence rule.
 
 ### Verify without competition data
 

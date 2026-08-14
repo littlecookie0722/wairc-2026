@@ -7,6 +7,17 @@ verified repository changes; they do not imply a release has been published.
 
 Future changes will be listed here before the next release.
 
+### Added
+
+- Stable `complex_iq_to_spectrogram` API for one-dimensional complex IQ arrays,
+  with exact `stft-v1` equivalence to the corresponding float32 interleaved
+  representation.
+
+### Compatibility
+
+- Existing interleaved-IQ transforms, `src.*` entry points, STFT defaults, and
+  competition training/inference behavior are unchanged.
+
 ## [0.3.0] - 2026-08-14
 
 ### Added
