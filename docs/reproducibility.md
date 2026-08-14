@@ -173,9 +173,12 @@ real-data benchmark or competition result.
 
 The CPU compatibility probe runs the stable interleaved and native-complex
 `stft-v1` paths with exact equality, then performs a randomly initialized
-ResNet18 forward pass explicitly on `torch.device("cpu")`. GitHub Actions runs
-this probe on Python 3.10, 3.11, and 3.12; it does not download weights or
-require competition data.
+ResNet18 forward pass explicitly on `torch.device("cpu")`. It also traces that
+no-weights model with TorchScript on CPU, executes the traced graph, and checks
+that its finite logits remain numerically close to the eager result. GitHub
+Actions runs this probe on Python 3.10, 3.11, and 3.12; it does not download
+weights or require competition data. The TorchScript check is a compatibility
+probe, not a change to the competition training or inference entry points.
 
 For a machine-readable synthetic check, run:
 

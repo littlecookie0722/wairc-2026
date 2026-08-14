@@ -11,6 +11,9 @@ verified repository changes; they do not imply a release has been published.
   that applies the documented noise, frequency-offset, timing-offset, and
   signal-gain controls together. The condition remains a synthetic interaction
   check and does not claim real-data robustness.
+- The data-free CPU compatibility probe now executes the no-weights model
+  through TorchScript and compares its finite logits with the eager CPU path;
+  the competition training and inference entry points are unchanged.
 
 ## [0.6.0] - 2026-08-14
 
