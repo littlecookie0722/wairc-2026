@@ -135,7 +135,7 @@ was released on 2026-08-14 with the following verified capabilities:
 ## Released: v0.11.0 complete-node robustness baseline
 
 - [v0.11.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.11.0)
-  is prepared for publication on 2026-08-14 with the following verified
+  was released on 2026-08-14 with the following verified
   capability:
 - `robustness-small` adds an `all-nodes-present` condition that isolates the
   complete three-receiver state from the periodic missing-node baseline. The
