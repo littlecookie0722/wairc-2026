@@ -21,13 +21,15 @@ directory and validates its submission. Generated datasets, models, and
 reports are local outputs and should not be committed.
 
 The controlled robustness profile runs the same clean training workflow
-against seven test conditions:
+against nine test conditions:
 
     wairc benchmark run --profile robustness-small
 
 - `baseline`: the default noise and periodic missing-node pattern;
 - `high-noise`: noise standard deviation `0.20` with the default node pattern;
-- `node0-missing`: the first receiver node is absent for every test sample.
+- `node0-missing`: the first receiver node is absent for every test sample;
+- `node1-missing`: the second receiver node is absent for every test sample;
+- `node2-missing`: the third receiver node is absent for every test sample;
 - `frequency-offset`: a `180 Hz` test frequency offset;
 - `timing-offset`: a `32`-sample test window offset;
 - `low-gain`: a `0.5` test signal gain;
@@ -49,7 +51,7 @@ competition data.
 
 [`tests/fixtures/benchmark/synthetic_iq_robustness_v1.json`](../tests/fixtures/benchmark/synthetic_iq_robustness_v1.json)
 is the corresponding parameter manifest for `robustness-small`. It records all
-seven condition controls and the expected report signature without including
+nine condition controls and the expected report signature without including
 generated IQ, model outputs, or private labels. Both fixtures are input
 contracts; generated benchmark artifacts remain local outputs.
 

@@ -118,31 +118,30 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
     conditions = report["metrics"]["conditions"]
 
     assert result.profile == "robustness-small"
-    assert [condition["name"] for condition in manifest["evaluation"]["conditions"]] == [
+    expected_names = [
         "baseline",
         "high-noise",
         "node0-missing",
+        "node1-missing",
+        "node2-missing",
         "frequency-offset",
         "timing-offset",
         "low-gain",
         "combined-stress",
     ]
-    assert manifest["evaluation"]["conditions"][3]["frequency_offset_hz"] == 180.0
-    assert manifest["evaluation"]["conditions"][4]["timing_offset_samples"] == 32
-    assert manifest["evaluation"]["conditions"][5]["signal_gain"] == 0.5
-    assert manifest["evaluation"]["conditions"][6]["noise_std"] == 0.20
-    assert manifest["evaluation"]["conditions"][6]["frequency_offset_hz"] == 180.0
-    assert manifest["evaluation"]["conditions"][6]["timing_offset_samples"] == 32
-    assert manifest["evaluation"]["conditions"][6]["signal_gain"] == 0.5
-    assert [condition["name"] for condition in conditions] == [
-        "baseline",
-        "high-noise",
-        "node0-missing",
-        "frequency-offset",
-        "timing-offset",
-        "low-gain",
-        "combined-stress",
-    ]
+    assert [condition["name"] for condition in manifest["evaluation"]["conditions"]] == expected_names
+    manifest_by_name = {condition["name"]: condition for condition in manifest["evaluation"]["conditions"]}
+    assert manifest_by_name["node0-missing"]["missing_node_pattern"] == [0]
+    assert manifest_by_name["node1-missing"]["missing_node_pattern"] == [1]
+    assert manifest_by_name["node2-missing"]["missing_node_pattern"] == [2]
+    assert manifest_by_name["frequency-offset"]["frequency_offset_hz"] == 180.0
+    assert manifest_by_name["timing-offset"]["timing_offset_samples"] == 32
+    assert manifest_by_name["low-gain"]["signal_gain"] == 0.5
+    assert manifest_by_name["combined-stress"]["noise_std"] == 0.20
+    assert manifest_by_name["combined-stress"]["frequency_offset_hz"] == 180.0
+    assert manifest_by_name["combined-stress"]["timing_offset_samples"] == 32
+    assert manifest_by_name["combined-stress"]["signal_gain"] == 0.5
+    assert [condition["name"] for condition in conditions] == expected_names
     assert all(0.0 <= condition["metrics"]["exact_match_accuracy"] <= 1.0 for condition in conditions)
     assert all(len(condition["metrics"]["per_class_recall"]) == 9 for condition in conditions)
     assert all(

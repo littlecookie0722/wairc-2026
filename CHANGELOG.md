@@ -5,7 +5,11 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Future unreleased changes will be listed here before the next release.
+### Added
+
+- `robustness-small` now includes dedicated `node1-missing` and
+  `node2-missing` conditions, completing receiver-specific systematic
+  missing-node coverage while retaining all existing conditions.
 
 ## [0.8.0] - 2026-08-14
 

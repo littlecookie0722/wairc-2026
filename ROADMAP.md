@@ -113,6 +113,13 @@ was released on 2026-08-14 with the following verified capabilities:
   signature without distributing generated IQ, model outputs, or private
   labels.
 
+## Unreleased: receiver-specific robustness coverage
+
+- The current unreleased benchmark profile adds dedicated `node1-missing` and
+  `node2-missing` conditions to the existing `robustness-small` protocol.
+  Their redistributable parameter manifest and deterministic signature remain
+  synthetic-only and do not change the competition workflow.
+
 ## Later: public interoperability and benchmarks
 
 - Extend the robustness protocol with additional evidence-backed conditions or
