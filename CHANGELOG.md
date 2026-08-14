@@ -19,6 +19,8 @@ Current unreleased changes are listed here before the next release.
   single-channel complex recordings.
 - Read-only `SigMFDatasetAdapter` support for one local single-channel recording
   with supported complex integer or complex float IQ datatypes.
+- Reproducible `wairc benchmark run --profile cpu-smoke` with
+  `benchmark-manifest-v1` inputs and `benchmark-report-v1` results.
 
 ### Compatibility
 
@@ -27,6 +29,9 @@ Current unreleased changes are listed here before the next release.
 - The adapter preserves sample order, node order, sample-rate metadata, the
   0..8 label mapping, and empty-IQ/zero-rate missing-node semantics. It is an
   additive public path and does not rewrite legacy dataset files.
+- The synthetic benchmark uses the existing CPU demo path and reports only
+  synthetic functional metrics; it does not claim real-data or competition
+  performance.
 
 ## [0.3.0] - 2026-08-14
 

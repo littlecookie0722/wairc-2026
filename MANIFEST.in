@@ -7,6 +7,7 @@ include SECURITY.md
 include SUPPORT.md
 include docs/Dataset_Guide_EN.md
 include docs/architecture.md
+include docs/benchmark.md
 include docs/public-api.md
 include docs/release-checklist.md
 include docs/reproducibility.md

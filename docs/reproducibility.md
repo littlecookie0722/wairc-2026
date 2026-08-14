@@ -163,6 +163,19 @@ metrics, and validated submission under `outputs/demo/`. Its exact-match value
 only checks deterministic synthetic separability and must not be reported as a
 real-data benchmark or competition result.
 
+For a machine-readable synthetic check, run:
+
+    wairc benchmark run --profile cpu-smoke
+
+The benchmark writes `benchmark-manifest.json` and `benchmark-report.json`
+under `outputs/benchmark/` by default. The manifest captures the generator
+version, seed, sample rate, node count, class mapping, noise and missing-node
+pattern, and the exact `stft-v1` feature parameters. The report records
+synthetic exact-match metrics and a SHA-256 deterministic signature over the
+manifest and deterministic metrics; runtime is intentionally not part of that
+signature. This verifies the public CPU workflow only and does not estimate
+real RF or competition performance.
+
 Data-backed checks:
 
     python -m src.train_spectrogram_kfold --tag r34 --arch resnet34 --fold 0 --epochs 1 --num-workers 0

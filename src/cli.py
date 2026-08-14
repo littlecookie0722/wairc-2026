@@ -13,6 +13,7 @@ COMMAND_MODULES = {
     "predict-kfold": "src.predict_spectrogram_kfold",
     "validate": "src.validate_submission",
     "demo": "src.synthetic_demo",
+    "benchmark": "src.benchmark",
     "artifact": "src.artifact_cli",
 }
 
@@ -27,6 +28,7 @@ def format_help() -> str:
             "  predict        Predict with one spectrogram model",
             "  predict-kfold  Predict with a k-fold ensemble",
             "  validate       Validate a submission text file",
+            "  benchmark      Run a reproducible synthetic benchmark",
             "  artifact       Inspect artifacts or validate a run manifest",
         ]
     )

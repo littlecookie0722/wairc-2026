@@ -23,6 +23,14 @@ from .validate_submission import validate_submission
 
 SAMPLE_RATE = 4096.0
 CLASS_FREQUENCIES = np.linspace(160.0, 1440.0, NUM_CLASSES)
+SYNTHETIC_GENERATOR_VERSION = "synthetic-iq-v1"
+SIGNAL_SAMPLE_COUNT = 2048
+NOISE_STD = 0.08
+NODE_FREQUENCY_OFFSET = 3.0
+SYNTHETIC_N_FFT = 128
+SYNTHETIC_HOP = 32
+SYNTHETIC_TARGET_FREQ = 65
+SYNTHETIC_TARGET_TIME = 64
 INDEX_FIELDS = [
     "sample_id",
     "iq_npz_relpath",
@@ -67,14 +75,15 @@ def _interleave_iq(signal: np.ndarray) -> np.ndarray:
 
 
 def _make_signal(labels: tuple[int, ...], node: int, rng: np.random.Generator) -> np.ndarray:
-    sample_count = 2048
-    times = np.arange(sample_count, dtype=np.float64) / SAMPLE_RATE
-    signal = np.zeros(sample_count, dtype=np.complex128)
+    times = np.arange(SIGNAL_SAMPLE_COUNT, dtype=np.float64) / SAMPLE_RATE
+    signal = np.zeros(SIGNAL_SAMPLE_COUNT, dtype=np.complex128)
     for label in labels:
         phase = rng.uniform(0.0, 2.0 * np.pi)
-        node_offset = (node - 1) * 3.0
+        node_offset = (node - 1) * NODE_FREQUENCY_OFFSET
         signal += np.exp(2j * np.pi * (CLASS_FREQUENCIES[label] + node_offset) * times + 1j * phase)
-    noise = rng.normal(0.0, 0.08, sample_count) + 1j * rng.normal(0.0, 0.08, sample_count)
+    noise = rng.normal(0.0, NOISE_STD, SIGNAL_SAMPLE_COUNT) + 1j * rng.normal(
+        0.0, NOISE_STD, SIGNAL_SAMPLE_COUNT
+    )
     return _interleave_iq(signal + noise)
 
 
@@ -122,13 +131,13 @@ def _feature_vector(sample: RFSample) -> np.ndarray:
         spec = iq_to_spectrogram(
             node.iq,
             node.sample_rate,
-            n_fft=128,
-            hop=32,
-            target_freq=65,
-            target_time=64,
+            n_fft=SYNTHETIC_N_FFT,
+            hop=SYNTHETIC_HOP,
+            target_freq=SYNTHETIC_TARGET_FREQ,
+            target_time=SYNTHETIC_TARGET_TIME,
         )
         if spec is None:
-            features.append(np.zeros(65, dtype=np.float32))
+            features.append(np.zeros(SYNTHETIC_TARGET_FREQ, dtype=np.float32))
         else:
             features.append(spec.mean(axis=1).astype(np.float32))
     return np.concatenate(features)
