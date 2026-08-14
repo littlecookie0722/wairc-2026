@@ -106,7 +106,7 @@ was released on 2026-08-14 with the following verified capabilities:
 ## Released: v0.8.0 redistributable robustness fixture
 
 - [v0.8.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.8.0)
-  is prepared for publication on 2026-08-14 with the following verified
+  was released on 2026-08-14 with the following verified
   capability:
 - A repository-authored `benchmark-fixture-v1` manifest covers all seven
   `robustness-small` conditions and pins the expected deterministic report
