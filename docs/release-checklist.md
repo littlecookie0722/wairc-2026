@@ -1,6 +1,6 @@
 # Release Checklist
 
-This document records the `v0.6.0`, `v0.5.0`, `v0.4.0`, `v0.3.0`, and `v0.2.0` release gates. A
+This document records the `v0.7.0`, `v0.6.0`, `v0.5.0`, `v0.4.0`, `v0.3.0`, and `v0.2.0` release gates. A
 checked item is backed by local or GitHub verification; it is not a claim about
 real-data performance.
 
@@ -12,6 +12,40 @@ real-data performance.
 - [x] The release preserves the 0..8 label mapping, interleaved IQ parsing,
   missing-node semantics, `stft-v1`, fold behavior, inference rules, ensemble
   weighting, checkpoint compatibility, and submission format.
+
+## v0.7.0 verification
+
+- [ ] `python -m pytest` passes locally with 156 tests.
+- [ ] `python scripts/smoke_test.py` passes locally.
+- [ ] `python scripts/cpu_compatibility.py` passes locally, including the
+  eager/TorchScript CPU comparison.
+- [ ] `ruff check src wairc_rf tests scripts` passes locally.
+- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [ ] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
+  the summary command, and the synthetic demo pass locally.
+- [ ] Source and wheel distributions build successfully, include the v0.7.0
+  release documentation, and include the benchmark fixture in the source
+  distribution.
+- [ ] The wheel installs in an isolated environment with runtime dependencies;
+  `pip check`, `wairc --version`, `wairc --help`, the demo, summary command,
+  and CPU compatibility probe pass there. The benchmark profiles pass in the
+  release matrix.
+- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+  commit and tag, including package, fixture, and isolated-wheel checks on
+  Python 3.12.
+- [ ] Release contents are inspected for data, model weights, caches, secrets,
+  and private paths.
+
+## v0.7.0 release metadata
+
+- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.7.0`.
+- [ ] `CHANGELOG.md`, migration boundaries, and
+  `docs/releases/v0.7.0.md` are prepared.
+- [ ] README and `ROADMAP.md` release text and links are prepared for
+  `v0.7.0` publication.
+- [ ] Annotated tag `v0.7.0` points to the verified release commit.
+- [ ] GitHub release `v0.7.0` is published with verified notes, wheel/sdist
+  assets, and no private assets.
 
 ## v0.6.0 verification
 

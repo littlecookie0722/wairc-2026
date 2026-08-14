@@ -92,14 +92,22 @@ was released on 2026-08-14 with the following verified capabilities:
 - The CPU compatibility probe runs public transform equality and a no-weights
   CPU model forward on Python 3.10, 3.11, and 3.12 in CI.
 
-## Unreleased: next interoperability steps
+## Released: v0.7.0 robustness and CPU execution compatibility
 
-- Extend the CPU probe to additional supported backends without changing the
-  competition workflow.
+- [v0.7.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.7.0)
+  is prepared for publication on 2026-08-14 with the following verified
+  capabilities:
+- `robustness-small` covers seven controlled synthetic conditions, including a
+  deterministic `combined-stress` interaction of noise, frequency offset,
+  timing offset, and signal gain. The results remain synthetic-only checks.
+- The CPU compatibility probe executes the no-weights model through both eager
+  PyTorch and TorchScript on CPU, compares finite logits, and continues to run
+  on Python 3.10, 3.11, and 3.12 in CI.
 
 ## Later: public interoperability and benchmarks
 
-- Expand robustness protocols beyond the current six synthetic conditions.
+- Expand the robustness protocol with additional evidence-backed conditions or
+  redistributable fixtures without changing the competition workflow.
 
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
