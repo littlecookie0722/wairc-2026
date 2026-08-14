@@ -43,6 +43,8 @@ ensemble inference -> 9-value submission
 - `wairc artifact validate-run` for read-only run-manifest linkage checks.
 - Optional `artifact-index-v1` references in newly completed training manifests,
   with path-free SHA-256, size, schema, fold, and tag metadata.
+- Public `RFNode`/`RFSample` contracts and a strict competition CSV/NPZ dataset
+  adapter that preserves node order, sample rates, labels, and missing nodes.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
 - Archived early baselines under archived_baselines.

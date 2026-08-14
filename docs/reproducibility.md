@@ -62,6 +62,22 @@ another local directory therefore preserves its fingerprint, while changing
 index semantics, the train/test label scope, or referenced file content changes
 the relevant digest.
 
+## Public dataset adapter
+
+`wairc_rf.CompetitionDatasetAdapter` is an additive, lazy reader for the
+competition `index.csv` plus three-node IQ NPZ schema. It returns `RFSample`
+objects containing fixed-order `RFNode` values, normalized labels when the
+adapter is created with `has_labels=True`, and `labels=None` for public-test
+rows. It validates sample-ID uniqueness, node flags, sample rates, NPZ field
+types, index/NPZ rate agreement, complete interleaved I/Q pairs, and path
+containment. These checks make malformed or ambiguous inputs fail before a
+caller converts them into features.
+
+The adapter does not replace the current training dataframe path, alter the
+dataset fingerprint algorithm, or reinterpret missing nodes. Existing
+`src.data.load_index`, `resolve_iq_path`, and `DroneSpectrogramDataset` entry
+points remain supported while callers migrate deliberately.
+
 Each k-fold OOF file uses the `oof-v1` schema. It retains the historical
 `probs`, `labels`, `indices`, `fold`, `sample_ids`, and `metrics` arrays while
 adding scalar schema metadata. The rule-search reader accepts legacy

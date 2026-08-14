@@ -2,10 +2,15 @@
 
 from src import __version__
 
+from .datasets import CompetitionDatasetAdapter, RFDatasetAdapter, RFNode, RFSample
 from .labels import label_to_multihot, multihot_to_signature, normalize_label_signature, parse_label_signature
 from .transforms import STFT_V1_PROFILE, STFTConfig, complex_iq_to_spectrogram, iq_to_spectrogram
 
 __all__ = [
+    "CompetitionDatasetAdapter",
+    "RFDatasetAdapter",
+    "RFNode",
+    "RFSample",
     "STFT_V1_PROFILE",
     "STFTConfig",
     "__version__",

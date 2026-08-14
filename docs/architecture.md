@@ -9,7 +9,7 @@ points; those `python -m src.<module>` entry points remain supported.
 
 ```mermaid
 flowchart LR
-    A["Training index.csv and IQ NPZ"] --> B["src.data and pandas rows"]
+    A["Training index.csv and IQ NPZ"] --> B["src.data or CompetitionDatasetAdapter"]
     B --> C["DroneSpectrogramDataset"]
     C --> D["IQ to STFT spectrogram"]
     D --> E["DroneClassifier"]
@@ -55,7 +55,7 @@ flowchart LR
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
-| wairc_rf/ | Stable public transform and label imports over compatible legacy implementations | `stft-v1` behavior and documented public signatures |
+| wairc_rf/ | Stable public transform, label, RF sample, and dataset-adapter imports over compatible legacy implementations | `stft-v1` behavior, label helpers, and dataset sample contracts |
 
 ## Main workflows
 
@@ -92,6 +92,9 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
 
 - Core STFT, dataset, model, training, and inference logic still lives in a
   small set of script-oriented modules.
+- The public `RFSample`/`RFNode` contract and competition CSV/NPZ adapter now
+  provide an additive interoperability path; the legacy training dataset still
+  consumes its existing row/dataframe interface.
 - There is no unified experiment configuration file; the CLI currently
   dispatches to the existing script arguments.
 - Training outputs now include a sanitized `run-manifest-v1` record with
