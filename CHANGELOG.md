@@ -5,18 +5,24 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Future changes will be listed here before the next release.
+Current unreleased changes are listed here before the next release.
 
 ### Added
 
 - Stable `complex_iq_to_spectrogram` API for one-dimensional complex IQ arrays,
   with exact `stft-v1` equivalence to the corresponding float32 interleaved
   representation.
+- Public `RFNode`/`RFSample` contracts, the `RFDatasetAdapter` sequence
+  protocol, and a strict lazy `CompetitionDatasetAdapter` for the existing
+  three-node CSV/NPZ schema.
 
 ### Compatibility
 
 - Existing interleaved-IQ transforms, `src.*` entry points, STFT defaults, and
   competition training/inference behavior are unchanged.
+- The adapter preserves sample order, node order, sample-rate metadata, the
+  0..8 label mapping, and empty-IQ/zero-rate missing-node semantics. It is an
+  additive public path and does not rewrite legacy dataset files.
 
 ## [0.3.0] - 2026-08-14
 

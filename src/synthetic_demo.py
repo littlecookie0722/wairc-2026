@@ -12,9 +12,10 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
+from wairc_rf import CompetitionDatasetAdapter, RFSample
 
 from .config import NUM_CLASSES, RANDOM_SEED
-from .data import label_to_multihot, load_index, resolve_iq_path
+from .data import label_to_multihot
 from .spectrogram import iq_to_spectrogram
 from .submission import write_submission
 from .validate_submission import validate_submission
@@ -115,29 +116,26 @@ def _write_dataset(
         writer.writerows(rows)
 
 
-def _feature_vector(npz_path: Path) -> np.ndarray:
+def _feature_vector(sample: RFSample) -> np.ndarray:
     features: list[np.ndarray] = []
-    with np.load(npz_path) as data:
-        for node in range(3):
-            raw = data[f"iq_node{node}"]
-            sample_rate = float(data[f"sample_rate_node{node}"])
-            spec = iq_to_spectrogram(
-                raw,
-                sample_rate,
-                n_fft=128,
-                hop=32,
-                target_freq=65,
-                target_time=64,
-            )
-            if spec is None:
-                features.append(np.zeros(65, dtype=np.float32))
-            else:
-                features.append(spec.mean(axis=1).astype(np.float32))
+    for node in sample.nodes:
+        spec = iq_to_spectrogram(
+            node.iq,
+            node.sample_rate,
+            n_fft=128,
+            hop=32,
+            target_freq=65,
+            target_time=64,
+        )
+        if spec is None:
+            features.append(np.zeros(65, dtype=np.float32))
+        else:
+            features.append(spec.mean(axis=1).astype(np.float32))
     return np.concatenate(features)
 
 
-def _features(root: Path, rows: list[dict]) -> np.ndarray:
-    return np.stack([_feature_vector(resolve_iq_path(root, row)) for row in rows])
+def _features(samples: list[RFSample]) -> np.ndarray:
+    return np.stack([_feature_vector(sample) for sample in samples])
 
 
 def _constrain_predictions(probabilities: np.ndarray, threshold: float) -> np.ndarray:
@@ -183,11 +181,13 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
 
     _write_dataset(train_root, train_labels, seed=seed, include_labels=True)
     _write_dataset(test_root, test_labels, seed=seed + 1, include_labels=False)
-    train_rows = load_index(train_root, has_labels=True)
-    test_rows = load_index(test_root, has_labels=False)
-    train_x = _features(train_root, train_rows)
-    test_x = _features(test_root, test_rows)
-    train_y = np.asarray([label_to_multihot(row["label_signature"]) for row in train_rows])
+    train_samples = list(CompetitionDatasetAdapter(train_root, has_labels=True))
+    test_samples = list(CompetitionDatasetAdapter(test_root, has_labels=False))
+    train_x = _features(train_samples)
+    test_x = _features(test_samples)
+    train_y = np.asarray(
+        [label_to_multihot("|".join(str(label) for label in sample.labels or ())) for sample in train_samples]
+    )
     test_y = np.asarray([label_to_multihot("|".join(map(str, labels))) for labels in test_labels])
 
     model = make_pipeline(
@@ -207,15 +207,16 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
     metrics_path = output_dir / "metrics.json"
     output_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, model_path)
-    write_submission(test_rows, predictions.tolist(), submission_path)
+    submission_rows = [{"sample_id": sample.sample_id} for sample in test_samples]
+    write_submission(submission_rows, predictions.tolist(), submission_path)
     errors = validate_submission(submission_path, test_root)
     if errors:
         raise RuntimeError("Synthetic submission validation failed: " + "; ".join(errors))
 
     result = DemoResult(
         output_dir=str(output_dir.resolve()),
-        train_samples=len(train_rows),
-        test_samples=len(test_rows),
+        train_samples=len(train_samples),
+        test_samples=len(test_samples),
         exact_match_accuracy=accuracy,
         threshold=threshold,
         submission_path=str(submission_path.resolve()),

@@ -45,12 +45,16 @@ was released on 2026-08-12 with the following foundations:
   submission boundaries.
 - Architecture, reproducibility, contribution, and security documentation.
 
-## Next: stable API and data interoperability
+## Unreleased: stable API and data interoperability
 
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
-- Define a generic public dataset adapter while preserving the competition
-  CSV/NPZ adapter.
+- Public `RFNode`/`RFSample` contracts and a strict competition CSV/NPZ adapter
+  now provide an additive generic sequence path while preserving the legacy
+  loader and training dataset.
+
+## Next: broader public interoperability and benchmarks
+
 - Evaluate SigMF import as an optional interoperability path.
 
 ## Later: public interoperability and benchmarks

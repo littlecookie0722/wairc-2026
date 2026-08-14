@@ -15,6 +15,34 @@ compatibility while implementation details are migrated incrementally.
 | `normalize_label_signature` | `(signature, num_classes=9)` |
 | `label_to_multihot` | `(signature, num_classes=9)` |
 | `multihot_to_signature` | `(multihot, num_classes=9)` |
+| `RFNode` | `(iq, sample_rate, present=True)` |
+| `RFSample` | `(sample_id, nodes, labels=None)` |
+| `RFDatasetAdapter` | sequence protocol returning `RFSample` |
+| `CompetitionDatasetAdapter` | `(root, has_labels=...)` |
+
+The dataset symbols provide the first public interoperability contract. The
+competition adapter reads the existing `index.csv` and three-node NPZ format
+without changing the legacy `src.data` or training entry points. It loads IQ
+files lazily and returns nodes in fixed `node0`, `node1`, `node2` order.
+
+```python
+from wairc_rf import CompetitionDatasetAdapter
+
+dataset = CompetitionDatasetAdapter("path/to/train", has_labels=True)
+sample = dataset[0]
+
+assert isinstance(sample.sample_id, int)  # the actual ID comes from index.csv
+assert sample.labels is not None
+for node in sample.nodes:
+    print(node.iq_format, node.sample_rate, node.present, node.iq.shape)
+```
+
+`RFNode` accepts one-dimensional real interleaved IQ arrays or one-dimensional
+complex IQ arrays. A missing node must use an empty array, `sample_rate=0`, and
+`present=False`; the competition adapter validates this against both the CSV
+row and NPZ fields. Labeled samples expose sorted, unique zero-based label
+indices, while public-test samples expose `labels=None`. Relative IQ paths are
+required to remain inside the dataset root, including after symlink resolution.
 
 ## STFT profile v1
 
