@@ -5,6 +5,7 @@ from src.benchmark import run_benchmark, write_benchmark_summary
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "benchmark" / "synthetic_iq_v1.json"
+ROBUSTNESS_FIXTURE = Path(__file__).parent / "fixtures" / "benchmark" / "synthetic_iq_robustness_v1.json"
 
 
 def test_synthetic_benchmark_writes_path_free_deterministic_report(tmp_path):
@@ -50,6 +51,31 @@ def test_redistributable_fixture_matches_cpu_smoke_manifest(tmp_path):
     assert fixture["generator"] == manifest["generator"]
     assert fixture["profile"] == manifest["profile"]
     for section in ("data", "transform", "training"):
+        assert fixture[section] == manifest[section]
+    assert fixture["expected"]["report_schema"] == report["schemaVersion"]
+    assert fixture["expected"]["deterministic_signature"] == report["deterministic_signature"]
+    assert result.deterministic_signature == fixture["expected"]["deterministic_signature"]
+
+
+def test_redistributable_fixture_matches_robustness_manifest(tmp_path):
+    fixture = json.loads(ROBUSTNESS_FIXTURE.read_text(encoding="utf-8"))
+    result = run_benchmark(tmp_path / "fixture", profile=fixture["profile"], seed=fixture["seed"])
+    manifest = json.loads((tmp_path / "fixture" / "benchmark-manifest.json").read_text(encoding="utf-8"))
+    report = json.loads((tmp_path / "fixture" / "benchmark-report.json").read_text(encoding="utf-8"))
+
+    assert fixture["schemaVersion"] == "benchmark-fixture-v1"
+    assert fixture["fixtureId"] == "synthetic-iq-v1-robustness-small"
+    assert fixture["redistribution"] == {
+        "status": "repository-authored-parameters-only",
+        "license": "MIT",
+        "raw_iq_included": False,
+        "model_weights_included": False,
+        "private_labels_included": False,
+        "external_recordings_included": False,
+    }
+    assert fixture["generator"] == manifest["generator"]
+    assert fixture["profile"] == manifest["profile"]
+    for section in ("data", "transform", "training", "evaluation"):
         assert fixture[section] == manifest[section]
     assert fixture["expected"]["report_schema"] == report["schemaVersion"]
     assert fixture["expected"]["deterministic_signature"] == report["deterministic_signature"]

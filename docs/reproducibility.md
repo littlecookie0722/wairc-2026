@@ -82,12 +82,15 @@ points remain supported while callers migrate deliberately.
 with stable order and unique IDs. It is intended for data-free tests and
 benchmark fixtures; it does not claim to reproduce real RF recordings.
 
-The repository includes `tests/fixtures/benchmark/synthetic_iq_v1.json` as a
-redistributable, repository-authored parameter manifest for the `cpu-smoke`
-profile. It records the generator, data, transform, training inputs, and
-expected deterministic signature without including raw IQ, external
-recordings, model weights, or private labels. Its schema and signature are
-checked by the benchmark tests and the source-distribution packaging gate.
+The repository includes `tests/fixtures/benchmark/synthetic_iq_v1.json` and
+`tests/fixtures/benchmark/synthetic_iq_robustness_v1.json` as redistributable,
+repository-authored parameter manifests for the `cpu-smoke` and
+`robustness-small` profiles. They record generator, data, transform, and
+training inputs; the robustness fixture additionally records all evaluation
+conditions. Both include an expected deterministic signature without including
+raw IQ, external recordings, model weights, or private labels. Their schemas
+and signatures are checked by the benchmark tests and the source-distribution
+packaging gate.
 
 The experimental SigMF parser and recording adapter are read-only. The
 synthetic fixture under `tests/fixtures/sigmf/` records the supported datatype,

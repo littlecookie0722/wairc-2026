@@ -47,6 +47,12 @@ weights, or private labels. The source distribution includes this JSON fixture
 so consumers can verify the documented benchmark boundary without obtaining
 competition data.
 
+[`tests/fixtures/benchmark/synthetic_iq_robustness_v1.json`](../tests/fixtures/benchmark/synthetic_iq_robustness_v1.json)
+is the corresponding parameter manifest for `robustness-small`. It records all
+seven condition controls and the expected report signature without including
+generated IQ, model outputs, or private labels. Both fixtures are input
+contracts; generated benchmark artifacts remain local outputs.
+
 ## Render a Markdown summary
 
 Turn a machine-readable report into a compact review document with:
