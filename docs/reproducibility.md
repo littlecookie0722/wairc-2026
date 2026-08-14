@@ -176,6 +176,12 @@ manifest and deterministic metrics; runtime is intentionally not part of that
 signature. This verifies the public CPU workflow only and does not estimate
 real RF or competition performance.
 
+The controlled `robustness-small` profile uses the same clean training split
+for three test conditions: the default baseline, a higher noise standard
+deviation of `0.20`, and test samples with node 0 missing. Its report keeps the
+metrics and relative artifacts nested under each condition, so the comparison
+does not depend on local absolute paths.
+
 Data-backed checks:
 
     python -m src.train_spectrogram_kfold --tag r34 --arch resnet34 --fold 0 --epochs 1 --num-workers 0

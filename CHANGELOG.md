@@ -21,6 +21,8 @@ Current unreleased changes are listed here before the next release.
   with supported complex integer or complex float IQ datatypes.
 - Reproducible `wairc benchmark run --profile cpu-smoke` with
   `benchmark-manifest-v1` inputs and `benchmark-report-v1` results.
+- Controlled `robustness-small` benchmark conditions for higher noise and
+  node-0 absence, with macro-F1 and per-class-recall metrics.
 
 ### Compatibility
 

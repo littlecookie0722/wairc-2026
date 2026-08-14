@@ -72,6 +72,12 @@ jobs:
           --profile cpu-smoke
           --output-dir "${{ runner.temp }}/wairc-benchmark"
 
+      - name: Synthetic robustness benchmark
+        run: >-
+          wairc benchmark run
+          --profile robustness-small
+          --output-dir "${{ runner.temp }}/wairc-robustness"
+
       - name: Build distributions
         if: matrix.run_packaging
         run: python -m build --outdir "${{ runner.temp }}/wairc-dist"
