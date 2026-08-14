@@ -66,13 +66,22 @@ was released on 2026-08-14 with the following verified capabilities:
   with deterministic signatures. The robustness profile covers higher noise
   and node-0 absence without making real-data claims.
 
-## Unreleased: benchmark summaries and expanded perturbations
+## Released: v0.5.0 benchmark maintenance and robustness
 
-- `wairc benchmark summarize` now renders a compact path-safe Markdown summary
-  from `benchmark-report-v1` for routine review.
-- `robustness-small` now covers controlled noise, missing-node, frequency-
-  offset, timing-offset, and gain conditions while keeping synthetic results
+[v0.5.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.5.0)
+was released on 2026-08-14 with the following verified capabilities:
+
+- `wairc benchmark summarize` validates `benchmark-report-v1` and renders a
+  compact path-safe Markdown summary from machine-readable results.
+- `robustness-small` covers controlled noise, missing-node, frequency-offset,
+  timing-offset, and signal-gain conditions while keeping synthetic results
   separate from real-data claims.
+
+## Unreleased: next interoperability steps
+
+- Separate reusable RF transformations from competition-specific workflows.
+- Add documented benchmark fixtures that can be redistributed legally.
+- Expand CPU compatibility tests across supported Python versions.
 
 ## Later: public interoperability and benchmarks
 
