@@ -45,10 +45,13 @@ was released on 2026-08-12 with the following foundations:
   submission boundaries.
 - Architecture, reproducibility, contribution, and security documentation.
 
-## Unreleased: stable API and data interoperability
+## Released: v0.4.0 stable API, interoperability, and benchmarks
 
-- Expand the initial stable transform and label API while preserving the
-  existing `src.*` module entry points during migration.
+[v0.4.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.4.0)
+was released on 2026-08-14 with the following verified capabilities:
+
+- Stable transform and label APIs now coexist with the existing `src.*` module
+  entry points.
 - Public `RFNode`/`RFSample` contracts, `SyntheticDatasetAdapter`, and a strict
   competition CSV/NPZ adapter now provide an additive generic sequence path
   while preserving the legacy loader and training dataset.
@@ -63,7 +66,7 @@ was released on 2026-08-12 with the following foundations:
   with deterministic signatures. The robustness profile covers higher noise
   and node-0 absence without making real-data claims.
 
-## Next: benchmark summaries and expanded perturbations
+## Unreleased: benchmark summaries and expanded perturbations
 
 - Add a compact Markdown summary generated from the machine-readable report.
 - Add controlled frequency-offset, timing-offset, and gain conditions while
@@ -74,8 +77,8 @@ was released on 2026-08-12 with the following foundations:
 - Separate reusable RF transformations from competition-specific workflows.
 - Add documented benchmark fixtures that can be redistributed legally.
 - Expand CPU compatibility tests across supported Python versions.
-- Add robustness protocols for signal-to-noise ratio, frequency offset,
-  timing offset, gain changes, and missing receiver nodes.
+- Expand robustness protocols beyond the current noise and missing-node
+  conditions to cover frequency offset, timing offset, and gain changes.
 
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests

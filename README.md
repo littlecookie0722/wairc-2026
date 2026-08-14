@@ -1,7 +1,7 @@
 # WAIRC-2026
 
 [![CI](https://github.com/littlecookie0722/wairc-2026/actions/workflows/ci.yml/badge.svg)](https://github.com/littlecookie0722/wairc-2026/actions/workflows/ci.yml)
-[![GitHub release](https://img.shields.io/github/v/release/littlecookie0722/wairc-2026)](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.3.0)
+[![GitHub release](https://img.shields.io/github/v/release/littlecookie0722/wairc-2026)](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.4.0)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A public research implementation of multi-node RF drone identification from
@@ -16,7 +16,7 @@ The project is maintained as a reproducible research codebase. It does not
 claim production adoption, download volume, leaderboard results, or community
 size that are not backed by repository evidence.
 
-The latest public release is [v0.3.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.3.0).
+The latest public release is [v0.4.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.4.0).
 
 ## Pipeline
 
@@ -235,8 +235,9 @@ original terms.
 - [Synthetic benchmark](docs/benchmark.md): reproducible CPU profile and
   machine-readable manifest/report contract.
 - [Reproducibility](docs/reproducibility.md): current limits and required records.
-- [Release checklist](docs/release-checklist.md): the v0.3.0 release record and
+- [Release checklist](docs/release-checklist.md): the v0.4.0 release record and
   future release gates.
+- [v0.4.0 release notes](docs/releases/v0.4.0.md).
 - [v0.3.0 release notes](docs/releases/v0.3.0.md).
 - [v0.2.0 release notes](docs/releases/v0.2.0.md).
 - [v0.1.0 release notes](docs/releases/v0.1.0.md).
