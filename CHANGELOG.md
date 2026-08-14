@@ -5,7 +5,12 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Future unreleased changes will be listed here before the next release.
+### Added
+
+- `robustness-small` now includes a deterministic `combined-stress` condition
+  that applies the documented noise, frequency-offset, timing-offset, and
+  signal-gain controls together. The condition remains a synthetic interaction
+  check and does not claim real-data robustness.
 
 ## [0.6.0] - 2026-08-14
 
