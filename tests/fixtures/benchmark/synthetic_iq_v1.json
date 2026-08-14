@@ -1,0 +1,47 @@
+{
+  "schemaVersion": "benchmark-fixture-v1",
+  "fixtureId": "synthetic-iq-v1-cpu-smoke",
+  "redistribution": {
+    "status": "repository-authored-parameters-only",
+    "license": "MIT",
+    "raw_iq_included": false,
+    "model_weights_included": false,
+    "private_labels_included": false,
+    "external_recordings_included": false
+  },
+  "generator": {
+    "name": "wairc.synthetic_iq",
+    "version": "synthetic-iq-v1"
+  },
+  "profile": "cpu-smoke",
+  "seed": 2026,
+  "data": {
+    "sample_rate_hz": 4096.0,
+    "node_count": 3,
+    "num_classes": 9,
+    "class_mapping": [0, 1, 2, 3, 4, 5, 6, 7, 8],
+    "class_frequencies_hz": [160.0, 320.0, 480.0, 640.0, 800.0, 960.0, 1120.0, 1280.0, 1440.0],
+    "signal_sample_count": 2048,
+    "noise_std": 0.08,
+    "node_frequency_offset_hz": 3.0,
+    "missing_node_pattern": [0, 1, 2, null]
+  },
+  "transform": {
+    "profile": "stft-v1",
+    "n_fft": 128,
+    "hop": 32,
+    "target_freq": 65,
+    "target_time": 64
+  },
+  "training": {
+    "model": "sklearn.OneVsRestClassifier(LogisticRegression)",
+    "train_samples_per_class": 2,
+    "solver": "liblinear",
+    "max_iter": 500,
+    "C": 10.0
+  },
+  "expected": {
+    "report_schema": "benchmark-report-v1",
+    "deterministic_signature": "d401aacd6630ecaaffdb3108c5c21674f9b139c80271c2d3491e45560c4519de"
+  }
+}

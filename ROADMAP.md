@@ -84,14 +84,19 @@ was released on 2026-08-14 with the following verified capabilities:
   the stable `wairc_rf` API share that kernel, with regression coverage for
   frozen output and legacy sample-rate fallback behavior.
 
+## Unreleased: redistributable benchmark fixture
+
+- `benchmark-fixture-v1` now provides a repository-authored parameter manifest
+  for the synthetic `cpu-smoke` profile. It is included in the source
+  distribution and contains no raw IQ, external recordings, model weights, or
+  private labels; its expected deterministic signature is test-verified.
+
 ## Unreleased: next interoperability steps
 
-- Add documented benchmark fixtures that can be redistributed legally.
 - Expand CPU compatibility tests across supported Python versions.
 
 ## Later: public interoperability and benchmarks
 
-- Add documented benchmark fixtures that can be redistributed legally.
 - Expand CPU compatibility tests across supported Python versions.
 - Expand robustness protocols beyond the current six synthetic conditions.
 

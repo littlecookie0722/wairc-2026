@@ -21,7 +21,7 @@ directory and validates its submission. Generated datasets, models, and
 reports are local outputs and should not be committed.
 
 The controlled robustness profile runs the same clean training workflow
-against three test conditions:
+against six test conditions:
 
     wairc benchmark run --profile robustness-small
 
@@ -33,6 +33,17 @@ against three test conditions:
 - `low-gain`: a `0.5` test signal gain.
 
 Each condition is evaluated independently with its own local demo artifacts.
+
+## Redistributable fixture
+
+[`tests/fixtures/benchmark/synthetic_iq_v1.json`](../tests/fixtures/benchmark/synthetic_iq_v1.json)
+is a small `benchmark-fixture-v1` parameter manifest for the `cpu-smoke`
+profile. It is repository-authored and distributed under the repository's MIT
+terms. It contains generator parameters and an expected deterministic
+signature only; it does not contain raw IQ, external recordings, model
+weights, or private labels. The source distribution includes this JSON fixture
+so consumers can verify the documented benchmark boundary without obtaining
+competition data.
 
 ## Render a Markdown summary
 
@@ -67,6 +78,10 @@ names.
 - a SHA-256 `deterministic_signature` over the manifest and deterministic
   metrics;
 - runtime and relative artifact names for local inspection.
+
+The fixture manifest is intentionally separate from generated benchmark output:
+it is a reviewable input contract, while `benchmark-manifest.json` records the
+full run inputs and `benchmark-report.json` records the result.
 
 The runtime is deliberately excluded from the signature because it depends on
 the machine. Re-running the same profile and seed with the same dependency

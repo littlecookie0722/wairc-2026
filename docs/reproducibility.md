@@ -79,8 +79,15 @@ dataset fingerprint algorithm, or reinterpret missing nodes. Existing
 points remain supported while callers migrate deliberately.
 
 `SyntheticDatasetAdapter` stores already-generated `RFSample` values in memory
-with stable order and unique IDs. It is intended for data-free tests and future
+with stable order and unique IDs. It is intended for data-free tests and
 benchmark fixtures; it does not claim to reproduce real RF recordings.
+
+The repository includes `tests/fixtures/benchmark/synthetic_iq_v1.json` as a
+redistributable, repository-authored parameter manifest for the `cpu-smoke`
+profile. It records the generator, data, transform, training inputs, and
+expected deterministic signature without including raw IQ, external
+recordings, model weights, or private labels. Its schema and signature are
+checked by the benchmark tests and the source-distribution packaging gate.
 
 The experimental SigMF parser and recording adapter are read-only. The
 synthetic fixture under `tests/fixtures/sigmf/` records the supported datatype,
