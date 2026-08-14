@@ -4,7 +4,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from wairc_rf import CompetitionDatasetAdapter, RFDatasetAdapter, RFNode, RFSample
+from wairc_rf import (
+    CompetitionDatasetAdapter,
+    RFDatasetAdapter,
+    RFNode,
+    RFSample,
+    SyntheticDatasetAdapter,
+)
 
 
 INDEX_FIELDS = [
@@ -101,6 +107,29 @@ def test_rf_sample_contract_supports_native_complex_nodes_and_canonical_labels()
     assert sample.sample_id == 11
     assert sample.labels == (0, 2)
     assert sample.node_mask == (True,)
+
+
+def test_synthetic_adapter_preserves_sequence_order_and_supports_slices():
+    node = RFNode(np.asarray([1, 2], dtype=np.int16), 1.0)
+    first = RFSample("first", (node,), labels=(0,))
+    second = RFSample("second", (node,))
+    adapter = SyntheticDatasetAdapter([first, second])
+
+    assert isinstance(adapter, RFDatasetAdapter)
+    assert adapter.sample_ids == ("first", "second")
+    assert adapter[0] is first
+    assert [sample.sample_id for sample in adapter[1:]] == ["second"]
+    assert [sample.sample_id for sample in adapter] == ["first", "second"]
+
+
+def test_synthetic_adapter_rejects_invalid_or_duplicate_samples():
+    node = RFNode(np.asarray([1, 2], dtype=np.int16), 1.0)
+    sample = RFSample(1, (node,))
+
+    with pytest.raises(ValueError, match="unique sample_id"):
+        SyntheticDatasetAdapter([sample, sample])
+    with pytest.raises(TypeError, match="RFSample"):
+        SyntheticDatasetAdapter(["not a sample"])
 
 
 @pytest.mark.parametrize(

@@ -49,9 +49,9 @@ was released on 2026-08-12 with the following foundations:
 
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
-- Public `RFNode`/`RFSample` contracts and a strict competition CSV/NPZ adapter
-  now provide an additive generic sequence path while preserving the legacy
-  loader and training dataset.
+- Public `RFNode`/`RFSample` contracts, `SyntheticDatasetAdapter`, and a strict
+  competition CSV/NPZ adapter now provide an additive generic sequence path
+  while preserving the legacy loader and training dataset.
 
 ## Next: broader public interoperability and benchmarks
 

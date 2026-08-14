@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from numbers import Integral, Real
 from pathlib import Path, PurePosixPath, PureWindowsPath
@@ -117,6 +117,39 @@ class RFDatasetAdapter(Protocol):
     def __len__(self) -> int: ...
 
     def __getitem__(self, index: int) -> RFSample: ...
+
+
+class SyntheticDatasetAdapter(Sequence[RFSample]):
+    """Expose generated or fixture samples through the public sequence contract."""
+
+    def __init__(self, samples: Iterable[RFSample]) -> None:
+        resolved = tuple(samples)
+        if any(not isinstance(sample, RFSample) for sample in resolved):
+            raise TypeError("samples must contain only RFSample instances")
+
+        sample_ids = [sample.sample_id for sample in resolved]
+        if len(set(sample_ids)) != len(sample_ids):
+            raise ValueError("Synthetic samples must have unique sample_id values")
+
+        self._samples = resolved
+
+    @property
+    def sample_ids(self) -> tuple[int | str, ...]:
+        return tuple(sample.sample_id for sample in self._samples)
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    @overload
+    def __getitem__(self, index: int) -> RFSample: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[RFSample]: ...
+
+    def __getitem__(self, index: int | slice) -> RFSample | list[RFSample]:
+        if isinstance(index, slice):
+            return list(self._samples[index])
+        return self._samples[index]
 
 
 class CompetitionDatasetAdapter(Sequence[RFSample]):

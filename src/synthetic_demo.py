@@ -12,7 +12,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
-from wairc_rf import CompetitionDatasetAdapter, RFSample
+from wairc_rf import CompetitionDatasetAdapter, RFDatasetAdapter, RFSample, SyntheticDatasetAdapter
 
 from .config import NUM_CLASSES, RANDOM_SEED
 from .data import label_to_multihot
@@ -134,8 +134,8 @@ def _feature_vector(sample: RFSample) -> np.ndarray:
     return np.concatenate(features)
 
 
-def _features(samples: list[RFSample]) -> np.ndarray:
-    return np.stack([_feature_vector(sample) for sample in samples])
+def _features(samples: RFDatasetAdapter) -> np.ndarray:
+    return np.stack([_feature_vector(samples[index]) for index in range(len(samples))])
 
 
 def _constrain_predictions(probabilities: np.ndarray, threshold: float) -> np.ndarray:
@@ -181,12 +181,15 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
 
     _write_dataset(train_root, train_labels, seed=seed, include_labels=True)
     _write_dataset(test_root, test_labels, seed=seed + 1, include_labels=False)
-    train_samples = list(CompetitionDatasetAdapter(train_root, has_labels=True))
-    test_samples = list(CompetitionDatasetAdapter(test_root, has_labels=False))
+    train_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(train_root, has_labels=True))
+    test_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(test_root, has_labels=False))
     train_x = _features(train_samples)
     test_x = _features(test_samples)
     train_y = np.asarray(
-        [label_to_multihot("|".join(str(label) for label in sample.labels or ())) for sample in train_samples]
+        [
+            label_to_multihot("|".join(str(label) for label in train_samples[index].labels or ()))
+            for index in range(len(train_samples))
+        ]
     )
     test_y = np.asarray([label_to_multihot("|".join(map(str, labels))) for labels in test_labels])
 
@@ -207,7 +210,9 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
     metrics_path = output_dir / "metrics.json"
     output_dir.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, model_path)
-    submission_rows = [{"sample_id": sample.sample_id} for sample in test_samples]
+    submission_rows = [
+        {"sample_id": test_samples[index].sample_id} for index in range(len(test_samples))
+    ]
     write_submission(submission_rows, predictions.tolist(), submission_path)
     errors = validate_submission(submission_path, test_root)
     if errors:
