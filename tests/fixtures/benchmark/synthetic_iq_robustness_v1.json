@@ -54,6 +54,14 @@
         "signal_gain": 1.0
       },
       {
+        "name": "all-nodes-present",
+        "noise_std": 0.08,
+        "missing_node_pattern": [null],
+        "frequency_offset_hz": 0.0,
+        "timing_offset_samples": 0,
+        "signal_gain": 1.0
+      },
+      {
         "name": "high-noise",
         "noise_std": 0.2,
         "missing_node_pattern": [0, 1, 2, null],
@@ -121,6 +129,6 @@
   },
   "expected": {
     "report_schema": "benchmark-report-v1",
-    "deterministic_signature": "8a52835e956b876a04735c4dd5e0e5ac9fdebeabca9dfe3584db47d5a0dd3adf"
+    "deterministic_signature": "aaca2c54b09475a40f888f0a3ef6ac3f50c60e0a4ee07ab303f8690b34be9559"
   }
 }

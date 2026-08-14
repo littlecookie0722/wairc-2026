@@ -243,7 +243,7 @@ original terms.
   repository-authored `cpu-smoke` parameter manifest without raw recordings or
   model data.
 - [Robustness benchmark fixture](tests/fixtures/benchmark/synthetic_iq_robustness_v1.json):
-  repository-authored nine-condition manifest without generated artifacts.
+  repository-authored ten-condition manifest without generated artifacts.
 - `wairc benchmark verify-fixture` replays a redistributable fixture and checks
   its manifest and deterministic report signature.
 - [CPU compatibility probe](docs/reproducibility.md): data-free public-transform,

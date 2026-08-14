@@ -132,6 +132,13 @@ was released on 2026-08-14 with the following verified capabilities:
   report schema, and deterministic signature without requiring competition data
   or trained checkpoints.
 
+## Unreleased: explicit complete-node robustness baseline
+
+- `robustness-small` adds an `all-nodes-present` condition that isolates the
+  complete three-receiver state from the periodic missing-node baseline. The
+  condition uses the existing synthetic missing-node semantics and does not
+  change the competition workflow.
+
 ## Later: public interoperability and benchmarks
 
 - Extend the robustness protocol with additional evidence-backed conditions or

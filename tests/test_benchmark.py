@@ -1,3 +1,4 @@
+import csv
 import json
 from pathlib import Path
 
@@ -155,6 +156,7 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
     assert result.profile == "robustness-small"
     expected_names = [
         "baseline",
+        "all-nodes-present",
         "high-noise",
         "node0-missing",
         "node1-missing",
@@ -166,6 +168,7 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
     ]
     assert [condition["name"] for condition in manifest["evaluation"]["conditions"]] == expected_names
     manifest_by_name = {condition["name"]: condition for condition in manifest["evaluation"]["conditions"]}
+    assert manifest_by_name["all-nodes-present"]["missing_node_pattern"] == [None]
     assert manifest_by_name["node0-missing"]["missing_node_pattern"] == [0]
     assert manifest_by_name["node1-missing"]["missing_node_pattern"] == [1]
     assert manifest_by_name["node2-missing"]["missing_node_pattern"] == [2]
@@ -183,6 +186,15 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
         (tmp_path / "robustness" / condition["artifacts"][0]).exists()
         and (tmp_path / "robustness" / condition["artifacts"][1]).exists()
         for condition in conditions
+    )
+    with (tmp_path / "robustness" / "conditions" / "all-nodes-present" / "data" / "test" / "index.csv").open(
+        newline="", encoding="utf-8"
+    ) as index_file:
+        all_nodes_rows = list(csv.DictReader(index_file))
+    assert all(
+        int(row[f"has_node{node}"]) == 1 and float(row[f"sample_rate_node{node}"]) == 4096.0
+        for row in all_nodes_rows
+        for node in range(3)
     )
     assert str(tmp_path) not in json.dumps(manifest)
     assert str(tmp_path) not in json.dumps(report)
