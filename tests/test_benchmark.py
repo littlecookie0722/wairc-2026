@@ -1,7 +1,9 @@
 import json
 from pathlib import Path
 
-from src.benchmark import run_benchmark, write_benchmark_summary
+import pytest
+
+from src.benchmark import run_benchmark, verify_benchmark_fixture, write_benchmark_summary
 
 
 FIXTURE = Path(__file__).parent / "fixtures" / "benchmark" / "synthetic_iq_v1.json"
@@ -82,6 +84,28 @@ def test_redistributable_fixture_matches_robustness_manifest(tmp_path):
     assert result.deterministic_signature == fixture["expected"]["deterministic_signature"]
 
 
+@pytest.mark.parametrize("fixture_path", [FIXTURE, ROBUSTNESS_FIXTURE])
+def test_verify_benchmark_fixture_replays_manifest_and_signature(tmp_path, fixture_path):
+    fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+
+    result = verify_benchmark_fixture(fixture_path, tmp_path / fixture["profile"])
+
+    assert result.profile == fixture["profile"]
+    assert result.deterministic_signature == fixture["expected"]["deterministic_signature"]
+
+
+def test_verify_benchmark_fixture_rejects_signature_mismatch_without_path_leak(tmp_path):
+    fixture = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    fixture["expected"]["deterministic_signature"] = "0" * 64
+    fixture_path = tmp_path / "invalid-fixture.json"
+    fixture_path.write_text(json.dumps(fixture), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="deterministic_signature") as error:
+        verify_benchmark_fixture(fixture_path, tmp_path / "output")
+
+    assert str(tmp_path) not in str(error.value)
+
+
 def test_synthetic_benchmark_cli_accepts_profile_and_output_dir(tmp_path, capsys):
     from src.benchmark import main
 
@@ -104,6 +128,17 @@ def test_synthetic_benchmark_cli_accepts_profile_and_output_dir(tmp_path, capsys
     )
     assert "Benchmark summary:" in capsys.readouterr().out
     assert (tmp_path / "cli" / "summary.md").exists()
+
+
+def test_synthetic_benchmark_cli_verifies_redistributable_fixture(tmp_path, capsys):
+    from src.benchmark import main
+
+    main(["verify-fixture", str(FIXTURE), "--output-dir", str(tmp_path / "fixture")])
+
+    output = capsys.readouterr().out
+    assert "Benchmark fixture verified" in output
+    assert "Deterministic signature:" in output
+    assert (tmp_path / "fixture" / "benchmark-report.json").exists()
 
 
 def test_robustness_small_reports_each_controlled_condition(tmp_path):

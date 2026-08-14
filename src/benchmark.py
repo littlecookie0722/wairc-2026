@@ -28,7 +28,17 @@ from .synthetic_demo import (
 
 BENCHMARK_MANIFEST_SCHEMA = "benchmark-manifest-v1"
 BENCHMARK_REPORT_SCHEMA = "benchmark-report-v1"
+BENCHMARK_FIXTURE_SCHEMA = "benchmark-fixture-v1"
 BENCHMARK_GENERATOR_NAME = "wairc.synthetic_iq"
+
+_EXPECTED_FIXTURE_REDISTRIBUTION = {
+    "status": "repository-authored-parameters-only",
+    "license": "MIT",
+    "raw_iq_included": False,
+    "model_weights_included": False,
+    "private_labels_included": False,
+    "external_recordings_included": False,
+}
 
 
 @dataclass(frozen=True)
@@ -315,6 +325,72 @@ def write_benchmark_summary(report_path: Path, output_path: Path | None = None) 
     return output_path
 
 
+def _load_benchmark_fixture(fixture_path: Path) -> dict[str, object]:
+    fixture_path = Path(fixture_path)
+    try:
+        fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise ValueError(f"Benchmark fixture {fixture_path.name!r} was not found") from None
+    except OSError:
+        raise ValueError(f"Benchmark fixture {fixture_path.name!r} could not be read") from None
+    except json.JSONDecodeError as error:
+        raise ValueError(f"Benchmark fixture {fixture_path.name!r} is not valid JSON") from error
+
+    if not isinstance(fixture, dict):
+        raise ValueError("Benchmark fixture must be a JSON object")
+    if fixture.get("schemaVersion") != BENCHMARK_FIXTURE_SCHEMA:
+        raise ValueError(f"Expected {BENCHMARK_FIXTURE_SCHEMA} fixture")
+    if fixture.get("redistribution") != _EXPECTED_FIXTURE_REDISTRIBUTION:
+        raise ValueError("Benchmark fixture redistribution metadata is not supported")
+
+    profile = fixture.get("profile")
+    if not isinstance(profile, str) or profile not in BENCHMARK_PROFILES:
+        raise ValueError("Benchmark fixture profile is not supported")
+    seed = fixture.get("seed")
+    if isinstance(seed, bool) or not isinstance(seed, int):
+        raise ValueError("Benchmark fixture seed must be an integer")
+
+    expected = fixture.get("expected")
+    if not isinstance(expected, dict):
+        raise ValueError("Benchmark fixture expected metadata must be an object")
+    if expected.get("report_schema") != BENCHMARK_REPORT_SCHEMA:
+        raise ValueError(f"Benchmark fixture expected report must use {BENCHMARK_REPORT_SCHEMA}")
+    signature = expected.get("deterministic_signature")
+    if (
+        not isinstance(signature, str)
+        or len(signature) != 64
+        or any(character not in "0123456789abcdef" for character in signature)
+    ):
+        raise ValueError("Benchmark fixture deterministic_signature must be a SHA-256 hex digest")
+
+    for field in ("generator", "data", "transform", "training"):
+        if not isinstance(fixture.get(field), dict):
+            raise ValueError(f"Benchmark fixture field {field!r} must be an object")
+    if "evaluation" in fixture and not isinstance(fixture["evaluation"], dict):
+        raise ValueError("Benchmark fixture field 'evaluation' must be an object")
+    return fixture
+
+
+def verify_benchmark_fixture(fixture_path: Path, output_dir: Path) -> BenchmarkResult:
+    fixture = _load_benchmark_fixture(fixture_path)
+    result = run_benchmark(output_dir, profile=fixture["profile"], seed=fixture["seed"])
+    manifest = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
+    report = json.loads(Path(result.report_path).read_text(encoding="utf-8"))
+
+    for field in ("generator", "profile", "seed", "data", "transform", "training"):
+        if fixture.get(field) != manifest.get(field):
+            raise ValueError(f"Benchmark fixture field {field!r} does not match generated manifest")
+    if "evaluation" in fixture and fixture["evaluation"] != manifest.get("evaluation"):
+        raise ValueError("Benchmark fixture field 'evaluation' does not match generated manifest")
+
+    expected = fixture["expected"]
+    if report.get("schemaVersion") != expected["report_schema"]:
+        raise ValueError("Benchmark fixture expected report schema does not match generated report")
+    if report.get("deterministic_signature") != expected["deterministic_signature"]:
+        raise ValueError("Benchmark fixture deterministic_signature does not match generated report")
+    return result
+
+
 def run_benchmark(
     output_dir: Path,
     profile: str = "cpu-smoke",
@@ -408,6 +484,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     summarize_parser = subparsers.add_parser("summarize", help="Render a Markdown summary from a benchmark report")
     summarize_parser.add_argument("report_path", type=Path)
     summarize_parser.add_argument("--output", type=Path)
+    verify_parser = subparsers.add_parser(
+        "verify-fixture", help="Replay and verify a redistributable benchmark fixture"
+    )
+    verify_parser.add_argument("fixture_path", type=Path)
+    verify_parser.add_argument("--output-dir", type=Path, default=Path("outputs/benchmark-fixture"))
     return parser.parse_args(argv)
 
 
@@ -416,6 +497,14 @@ def main(argv: list[str] | None = None) -> None:
     if args.action == "summarize":
         output_path = write_benchmark_summary(args.report_path, args.output)
         print(f"Benchmark summary: {output_path.resolve()}")
+        return
+    if args.action == "verify-fixture":
+        result = verify_benchmark_fixture(args.fixture_path, args.output_dir)
+        print("Benchmark fixture verified")
+        print(f"Profile: {result.profile}")
+        print(f"Deterministic signature: {result.deterministic_signature}")
+        print(f"Manifest: {result.manifest_path}")
+        print(f"Report: {result.report_path}")
         return
     result = run_benchmark(args.output_dir, profile=args.profile, seed=args.seed)
     print("Synthetic benchmark passed")

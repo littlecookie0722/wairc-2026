@@ -81,6 +81,16 @@ jobs:
           --profile robustness-small
           --output-dir "${{ runner.temp }}/wairc-robustness"
 
+      - name: Verify redistributable benchmark fixtures
+        if: matrix.run_quality
+        run: |
+          wairc benchmark verify-fixture \
+            tests/fixtures/benchmark/synthetic_iq_v1.json \
+            --output-dir "${{ runner.temp }}/wairc-fixture-cpu"
+          wairc benchmark verify-fixture \
+            tests/fixtures/benchmark/synthetic_iq_robustness_v1.json \
+            --output-dir "${{ runner.temp }}/wairc-fixture-robustness"
+
       - name: Build distributions
         if: matrix.run_packaging
         run: python -m build --outdir "${{ runner.temp }}/wairc-dist"

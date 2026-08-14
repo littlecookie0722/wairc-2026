@@ -7,7 +7,9 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
-Future unreleased changes will be listed here before the next release.
+- `wairc benchmark verify-fixture` replays a repository-authored
+  `benchmark-fixture-v1` manifest and verifies its generated manifest fields,
+  report schema, and deterministic SHA-256 signature.
 
 ## [0.9.0] - 2026-08-14
 

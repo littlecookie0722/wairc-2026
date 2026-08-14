@@ -55,6 +55,20 @@ nine condition controls and the expected report signature without including
 generated IQ, model outputs, or private labels. Both fixtures are input
 contracts; generated benchmark artifacts remain local outputs.
 
+## Verify a redistributable fixture
+
+Replay a repository-authored fixture and verify that the generated manifest,
+report schema, and deterministic signature match the fixture contract:
+
+    wairc benchmark verify-fixture \
+      tests/fixtures/benchmark/synthetic_iq_v1.json \
+      --output-dir outputs/benchmark-fixture
+
+Use the robustness fixture in the same way when checking all nine controlled
+conditions. The command writes ordinary local benchmark outputs under the
+selected directory; it does not modify the fixture, download competition
+data, or include generated IQ and model artifacts in the repository.
+
 ## Render a Markdown summary
 
 Turn a machine-readable report into a compact review document with:
