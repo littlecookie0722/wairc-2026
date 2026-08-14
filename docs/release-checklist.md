@@ -1,8 +1,8 @@
 # Release Checklist
 
-This document records the current `v0.3.0` release candidate and the completed
-`v0.2.0` gate. A checked item is backed by local or GitHub verification; it is
-not a claim about real-data performance.
+This document records the completed `v0.3.0` and `v0.2.0` release gates. A
+checked item is backed by local or GitHub verification; it is not a claim about
+real-data performance.
 
 ## Maintainer decisions
 
@@ -23,8 +23,8 @@ not a claim about real-data performance.
 - [x] Source and wheel distributions build successfully.
 - [x] The wheel installs in an isolated environment with runtime dependencies;
   `pip check`, `wairc --version`, `wairc --help`, and `wairc demo` pass there.
-- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
-  commit, including package and isolated-wheel checks on Python 3.12.
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+  commit and tag, including package and isolated-wheel checks on Python 3.12.
 - [x] Release contents are inspected for data, model weights, caches, secrets,
   and private paths.
 
@@ -35,9 +35,9 @@ not a claim about real-data performance.
   `docs/releases/v0.3.0.md` are prepared.
 - [x] README and `ROADMAP.md` release text and links are prepared for
   `v0.3.0` publication.
-- [ ] An annotated `v0.3.0` tag points to the verified release commit.
-- [ ] GitHub release `v0.3.0` is published with verified notes and no private
-  assets.
+- [x] Annotated tag `v0.3.0` points to verified release commit `ae158b68`.
+- [x] [GitHub release v0.3.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.3.0)
+  is published with verified notes, wheel/sdist assets, and no private assets.
 
 ## Previous v0.2.0 release record
 
