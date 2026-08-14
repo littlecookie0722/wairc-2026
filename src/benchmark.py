@@ -66,6 +66,7 @@ BENCHMARK_PROFILES = {
         train_samples_per_class=2,
         conditions=(
             BenchmarkCondition("baseline", NOISE_STD, MISSING_NODE_PATTERN, "conditions/baseline"),
+            BenchmarkCondition("all-nodes-present", NOISE_STD, (None,), "conditions/all-nodes-present"),
             BenchmarkCondition("high-noise", 0.20, MISSING_NODE_PATTERN, "conditions/high-noise"),
             BenchmarkCondition("node0-missing", NOISE_STD, (0,), "conditions/node0-missing"),
             BenchmarkCondition("node1-missing", NOISE_STD, (1,), "conditions/node1-missing"),

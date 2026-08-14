@@ -86,7 +86,7 @@ The repository includes `tests/fixtures/benchmark/synthetic_iq_v1.json` and
 `tests/fixtures/benchmark/synthetic_iq_robustness_v1.json` as redistributable,
 repository-authored parameter manifests for the `cpu-smoke` and
 `robustness-small` profiles. They record generator, data, transform, and
-training inputs; the robustness fixture additionally records all evaluation
+training inputs; the robustness fixture additionally records all ten evaluation
 conditions. Both include an expected deterministic signature without including
 raw IQ, external recordings, model weights, or private labels. Their schemas
 and signatures are checked by the benchmark tests and the source-distribution
@@ -204,11 +204,11 @@ signature. This verifies the public CPU workflow only and does not estimate
 real RF or competition performance.
 
 The controlled `robustness-small` profile uses the same clean training split
-for nine test conditions: the default baseline, a higher noise standard
-deviation of `0.20`, node 0 missing, node 1 missing, node 2 missing, a `180 Hz`
-frequency offset, a 32-sample timing offset, a `0.5` signal gain, and a
-combined condition that applies the noise, frequency, timing, and gain controls
-together. Its report keeps the
+for ten test conditions: the default periodic missing-node baseline, an
+all-nodes-present control, a higher noise standard deviation of `0.20`, node 0
+missing, node 1 missing, node 2 missing, a `180 Hz` frequency offset, a
+32-sample timing offset, a `0.5` signal gain, and a combined condition that
+applies the noise, frequency, timing, and gain controls together. Its report keeps the
 metrics and relative artifacts nested under each condition, so the comparison
 does not depend on local absolute paths.
 

@@ -7,7 +7,10 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
-Future unreleased changes will be listed here before the next release.
+- `robustness-small` adds an explicit `all-nodes-present` condition alongside
+  the periodic missing-node baseline and dedicated single-node absence checks.
+  The extension remains synthetic-only and uses the existing missing-node
+  semantics.
 
 ## [0.10.0] - 2026-08-14
 
