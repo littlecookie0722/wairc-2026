@@ -244,6 +244,8 @@ original terms.
   model data.
 - [Robustness benchmark fixture](tests/fixtures/benchmark/synthetic_iq_robustness_v1.json):
   repository-authored nine-condition manifest without generated artifacts.
+- `wairc benchmark verify-fixture` replays a redistributable fixture and checks
+  its manifest and deterministic report signature.
 - [CPU compatibility probe](docs/reproducibility.md): data-free public-transform,
   eager CPU-model, and TorchScript CPU checks across the supported Python matrix.
 - [Reproducibility](docs/reproducibility.md): current limits and required records.

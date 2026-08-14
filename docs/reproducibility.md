@@ -92,6 +92,13 @@ raw IQ, external recordings, model weights, or private labels. Their schemas
 and signatures are checked by the benchmark tests and the source-distribution
 packaging gate.
 
+After installing the project, `wairc benchmark verify-fixture` can replay
+either repository-authored manifest and compare its generator, data,
+transform, training, and any recorded evaluation section, plus the report
+schema and deterministic signature, with the generated output. The verification
+output remains local and does not require competition data or trained
+checkpoints.
+
 The experimental SigMF parser and recording adapter are read-only. The
 synthetic fixture under `tests/fixtures/sigmf/` records the supported datatype,
 sample-rate, capture, and annotation fields without adding a raw recording to

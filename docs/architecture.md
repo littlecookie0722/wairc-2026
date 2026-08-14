@@ -55,7 +55,7 @@ flowchart LR
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | src/cpu_compatibility.py | Data-free public-transform, eager CPU-model, and TorchScript CPU compatibility probe | supported Python/CPU execution boundary |
-| src/benchmark.py | Run named synthetic profiles, write path-safe manifest/report records, and render Markdown summaries | `benchmark-manifest-v1`, `benchmark-report-v1`, synthetic-only metrics |
+| src/benchmark.py | Run named synthetic profiles, verify redistributable fixtures, write path-safe manifest/report records, and render Markdown summaries | `benchmark-manifest-v1`, `benchmark-report-v1`, `benchmark-fixture-v1`, synthetic-only metrics |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
 | wairc_rf/_stft.py | Shared numerical `stft-v1` kernel independent of datasets and models | `stft-v1` values and legacy fallback boundary |
 | wairc_rf/ | Stable public transform, label, RF sample, and synthetic/competition dataset-adapter imports plus an experimental SigMF metadata/recording adapter | `stft-v1` behavior, label helpers, dataset sample contracts, and explicit SigMF subset |
@@ -105,9 +105,10 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   generator, transform, training, and evaluation inputs in
   `benchmark-manifest-v1`, then write path-safe `benchmark-report-v1` records
   with deterministic signatures. `wairc benchmark summarize` renders those
-  reports into compact Markdown without adding local absolute paths. These
-  remain functional checks and do not represent real-data or competition
-  accuracy.
+  reports into compact Markdown without adding local absolute paths, while
+  `wairc benchmark verify-fixture` replays repository-authored parameter
+  manifests and checks the generated signature. These remain functional checks
+  and do not represent real-data or competition accuracy.
 - Training outputs now include a sanitized `run-manifest-v1` record with
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and

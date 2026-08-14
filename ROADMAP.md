@@ -122,6 +122,13 @@ was released on 2026-08-14 with the following verified capabilities:
   parameter manifest and deterministic signature remain synthetic-only and do
   not change the competition workflow.
 
+## Unreleased: executable benchmark fixture verification
+
+- `wairc benchmark verify-fixture` replays either repository-authored
+  `benchmark-fixture-v1` manifest and verifies the generated manifest fields,
+  report schema, and deterministic signature without requiring competition data
+  or trained checkpoints.
+
 ## Later: public interoperability and benchmarks
 
 - Extend the robustness protocol with additional evidence-backed conditions or
