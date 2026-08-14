@@ -7,9 +7,25 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+Future unreleased changes will be listed here before the next release.
+
+## [0.10.0] - 2026-08-14
+
+### Added
+
 - `wairc benchmark verify-fixture` replays a repository-authored
   `benchmark-fixture-v1` manifest and verifies its generated manifest fields,
   report schema, and deterministic SHA-256 signature.
+- CI now replays both redistributable synthetic benchmark fixtures in the
+  quality job without requiring competition data or trained checkpoints.
+
+### Compatibility
+
+- The command writes generated benchmark artifacts only to the selected local
+  output directory and does not change competition data loading, STFT,
+  labels, training/inference entry points, checkpoints, or submission format.
+- Fixture verification remains a synthetic reproducibility check; it does not
+  claim real-data benchmark results or competition performance.
 
 ## [0.9.0] - 2026-08-14
 
