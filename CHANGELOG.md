@@ -12,6 +12,24 @@ verified repository changes; they do not imply a release has been published.
   The extension remains synthetic-only and uses the existing missing-node
   semantics.
 
+## [0.11.0] - 2026-08-14
+
+### Added
+
+- `robustness-small` now includes an explicit `all-nodes-present` control
+  alongside the periodic missing-node baseline and dedicated single-node
+  absence conditions.
+- The redistributable robustness fixture pins the ten-condition manifest and
+  its new deterministic report signature without including generated artifacts.
+
+### Compatibility
+
+- The existing `cpu-smoke` profile, prior robustness conditions, competition
+  data path, `stft-v1`, labels, training/inference entry points, checkpoint
+  fields, and submission format remain unchanged.
+- The new condition and signature remain synthetic-only checks; they do not
+  claim real-data robustness or competition performance.
+
 ## [0.10.0] - 2026-08-14
 
 ### Added
