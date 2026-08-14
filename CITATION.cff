@@ -5,10 +5,10 @@ type: software
 authors:
   - name: "littlecookie0722"
     website: "https://github.com/littlecookie0722"
-version: "0.7.0"
+version: "0.8.0"
 date-released: "2026-08-14"
 repository-code: "https://github.com/littlecookie0722/wairc-2026"
-url: "https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.7.0"
+url: "https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.8.0"
 license: MIT
 keywords:
   - radio frequency

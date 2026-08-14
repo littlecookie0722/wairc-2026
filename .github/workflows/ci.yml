@@ -103,6 +103,7 @@ jobs:
           assert any(name.endswith("/docs/public-api.md") for name in names)
           assert any(name.endswith("/docs/benchmark.md") for name in names)
           assert any(name.endswith("/docs/releases/v0.7.0.md") for name in names)
+          assert any(name.endswith("/docs/releases/v0.8.0.md") for name in names)
           assert any(name.endswith("/tests/fixtures/benchmark/synthetic_iq_v1.json") for name in names)
           assert any(name.endswith("/tests/fixtures/benchmark/synthetic_iq_robustness_v1.json") for name in names)
           PY

@@ -103,9 +103,19 @@ was released on 2026-08-14 with the following verified capabilities:
   PyTorch and TorchScript on CPU, compares finite logits, and continues to run
   on Python 3.10, 3.11, and 3.12 in CI.
 
+## Released: v0.8.0 redistributable robustness fixture
+
+- [v0.8.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.8.0)
+  is prepared for publication on 2026-08-14 with the following verified
+  capability:
+- A repository-authored `benchmark-fixture-v1` manifest covers all seven
+  `robustness-small` conditions and pins the expected deterministic report
+  signature without distributing generated IQ, model outputs, or private
+  labels.
+
 ## Later: public interoperability and benchmarks
 
-- Expand the robustness protocol with additional evidence-backed conditions or
+- Extend the robustness protocol with additional evidence-backed conditions or
   redistributable fixtures without changing the competition workflow.
 
 Only the released sections describe completed capability. All other items are
