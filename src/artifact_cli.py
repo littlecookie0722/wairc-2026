@@ -8,14 +8,15 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from .artifact_inspect import inspect_artifact
+from .artifact_inspect import inspect_artifact, validate_run_manifest
 
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inspect or validate a WAIRC-2026 artifact.")
+    parser = argparse.ArgumentParser(description="Inspect artifacts or validate a WAIRC-2026 run manifest.")
     subparsers = parser.add_subparsers(dest="action", required=True)
-    for action in ("inspect", "validate"):
-        subparser = subparsers.add_parser(action, help=f"{action.title()} one artifact.")
+    for action in ("inspect", "validate", "validate-run"):
+        help_text = "Validate a run manifest and its linked outputs." if action == "validate-run" else f"{action.title()} one artifact."
+        subparser = subparsers.add_parser(action, help=help_text)
         subparser.add_argument("path", type=Path)
         subparser.add_argument("--json", action="store_true", help="Print a machine-readable JSON summary.")
     return parser.parse_args(argv)
@@ -23,7 +24,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
 
 def main(argv: Sequence[str] | None = None) -> None:
     args = parse_args(argv)
-    result = inspect_artifact(args.path)
+    result = validate_run_manifest(args.path) if args.action == "validate-run" else inspect_artifact(args.path)
     if args.json:
         print(json.dumps(result, ensure_ascii=True, sort_keys=True))
     else:
