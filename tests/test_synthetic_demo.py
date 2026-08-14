@@ -14,6 +14,9 @@ def test_synthetic_demo_runs_end_to_end(tmp_path):
     assert result.train_samples == 27
     assert result.test_samples == 14
     assert 0.0 <= result.exact_match_accuracy <= 1.0
+    assert 0.0 <= result.macro_f1 <= 1.0
+    assert len(result.per_class_recall) == 9
+    assert all(0.0 <= value <= 1.0 for value in result.per_class_recall)
     assert validate_submission(output_dir / "submission.txt", output_dir / "data" / "test") == []
     assert joblib.load(output_dir / "model.joblib") is not None
 

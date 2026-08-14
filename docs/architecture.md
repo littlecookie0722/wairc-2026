@@ -98,10 +98,11 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   dataset still consumes its existing row/dataframe interface.
 - There is no unified experiment configuration file; the CLI currently
   dispatches to the existing script arguments.
-- The `cpu-smoke` synthetic benchmark records its fixed generator, transform,
-  training, and evaluation inputs in `benchmark-manifest-v1`, then writes a
-  path-safe `benchmark-report-v1` with a deterministic signature. It remains a
-  functional check and does not represent real-data or competition accuracy.
+- The `cpu-smoke` and `robustness-small` synthetic profiles record their fixed
+  generator, transform, training, and evaluation inputs in
+  `benchmark-manifest-v1`, then write path-safe `benchmark-report-v1` records
+  with deterministic signatures. They remain functional checks and do not
+  represent real-data or competition accuracy.
 - Training outputs now include a sanitized `run-manifest-v1` record with
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and

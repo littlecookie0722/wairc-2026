@@ -9,6 +9,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import f1_score, recall_score
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -27,6 +28,7 @@ SYNTHETIC_GENERATOR_VERSION = "synthetic-iq-v1"
 SIGNAL_SAMPLE_COUNT = 2048
 NOISE_STD = 0.08
 NODE_FREQUENCY_OFFSET = 3.0
+MISSING_NODE_PATTERN: tuple[int | None, ...] = (0, 1, 2, None)
 SYNTHETIC_N_FFT = 128
 SYNTHETIC_HOP = 32
 SYNTHETIC_TARGET_FREQ = 65
@@ -49,6 +51,8 @@ class DemoResult:
     train_samples: int
     test_samples: int
     exact_match_accuracy: float
+    macro_f1: float
+    per_class_recall: tuple[float, ...]
     threshold: float
     submission_path: str
     model_path: str
@@ -74,15 +78,20 @@ def _interleave_iq(signal: np.ndarray) -> np.ndarray:
     return output
 
 
-def _make_signal(labels: tuple[int, ...], node: int, rng: np.random.Generator) -> np.ndarray:
+def _make_signal(
+    labels: tuple[int, ...],
+    node: int,
+    rng: np.random.Generator,
+    noise_std: float = NOISE_STD,
+) -> np.ndarray:
     times = np.arange(SIGNAL_SAMPLE_COUNT, dtype=np.float64) / SAMPLE_RATE
     signal = np.zeros(SIGNAL_SAMPLE_COUNT, dtype=np.complex128)
     for label in labels:
         phase = rng.uniform(0.0, 2.0 * np.pi)
         node_offset = (node - 1) * NODE_FREQUENCY_OFFSET
         signal += np.exp(2j * np.pi * (CLASS_FREQUENCIES[label] + node_offset) * times + 1j * phase)
-    noise = rng.normal(0.0, NOISE_STD, SIGNAL_SAMPLE_COUNT) + 1j * rng.normal(
-        0.0, NOISE_STD, SIGNAL_SAMPLE_COUNT
+    noise = rng.normal(0.0, noise_std, SIGNAL_SAMPLE_COUNT) + 1j * rng.normal(
+        0.0, noise_std, SIGNAL_SAMPLE_COUNT
     )
     return _interleave_iq(signal + noise)
 
@@ -92,6 +101,8 @@ def _write_dataset(
     label_sets: list[tuple[int, ...]],
     seed: int,
     include_labels: bool,
+    noise_std: float = NOISE_STD,
+    missing_node_pattern: tuple[int | None, ...] = MISSING_NODE_PATTERN,
 ) -> None:
     iq_dir = root / "iq_sample"
     iq_dir.mkdir(parents=True, exist_ok=True)
@@ -99,7 +110,7 @@ def _write_dataset(
     rows: list[dict[str, object]] = []
 
     for sample_id, labels in enumerate(label_sets):
-        missing_node = sample_id % 4 if sample_id % 4 < 3 else None
+        missing_node = missing_node_pattern[sample_id % len(missing_node_pattern)]
         arrays: dict[str, np.ndarray] = {}
         row: dict[str, object] = {
             "sample_id": sample_id,
@@ -108,7 +119,9 @@ def _write_dataset(
         for node in range(3):
             present = node != missing_node
             arrays[f"iq_node{node}"] = (
-                _make_signal(labels, node, rng) if present else np.asarray([], dtype=np.int16)
+                _make_signal(labels, node, rng, noise_std=noise_std)
+                if present
+                else np.asarray([], dtype=np.int16)
             )
             arrays[f"sample_rate_node{node}"] = np.float32(SAMPLE_RATE if present else 0.0)
             row[f"has_node{node}"] = int(present)
@@ -172,9 +185,33 @@ def _select_threshold(probabilities: np.ndarray, labels: np.ndarray) -> float:
     )
 
 
-def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class: int = 4) -> DemoResult:
+def _normalize_test_condition(
+    noise_std: float | None,
+    missing_node_pattern: tuple[int | None, ...] | None,
+) -> tuple[float, tuple[int | None, ...]]:
+    normalized_noise = NOISE_STD if noise_std is None else float(noise_std)
+    normalized_pattern = MISSING_NODE_PATTERN if missing_node_pattern is None else tuple(missing_node_pattern)
+    if not np.isfinite(normalized_noise) or normalized_noise < 0.0:
+        raise ValueError("noise_std must be a finite non-negative number")
+    if not normalized_pattern:
+        raise ValueError("missing_node_pattern must not be empty")
+    if any(node is not None and node not in {0, 1, 2} for node in normalized_pattern):
+        raise ValueError("missing_node_pattern entries must be 0, 1, 2, or None")
+    return normalized_noise, normalized_pattern
+
+
+def run_demo(
+    output_dir: Path,
+    seed: int = RANDOM_SEED,
+    train_samples_per_class: int = 4,
+    test_noise_std: float | None = None,
+    test_missing_node_pattern: tuple[int | None, ...] | None = None,
+) -> DemoResult:
     if train_samples_per_class < 2:
         raise ValueError("train_samples_per_class must be at least 2")
+    test_noise_std, test_missing_node_pattern = _normalize_test_condition(
+        test_noise_std, test_missing_node_pattern
+    )
 
     output_dir = Path(output_dir)
     train_root = output_dir / "data" / "train"
@@ -188,8 +225,22 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
     test_labels = [(label,) for label in range(NUM_CLASSES)]
     test_labels.extend((label, (label + 1) % NUM_CLASSES) for label in range(0, NUM_CLASSES, 2))
 
-    _write_dataset(train_root, train_labels, seed=seed, include_labels=True)
-    _write_dataset(test_root, test_labels, seed=seed + 1, include_labels=False)
+    _write_dataset(
+        train_root,
+        train_labels,
+        seed=seed,
+        include_labels=True,
+        noise_std=NOISE_STD,
+        missing_node_pattern=MISSING_NODE_PATTERN,
+    )
+    _write_dataset(
+        test_root,
+        test_labels,
+        seed=seed + 1,
+        include_labels=False,
+        noise_std=test_noise_std,
+        missing_node_pattern=test_missing_node_pattern,
+    )
     train_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(train_root, has_labels=True))
     test_samples = SyntheticDatasetAdapter(CompetitionDatasetAdapter(test_root, has_labels=False))
     train_x = _features(train_samples)
@@ -213,6 +264,10 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
     threshold = _select_threshold(train_probabilities, train_y)
     predictions = _constrain_predictions(model.predict_proba(test_x), threshold)
     accuracy = float(np.mean(np.all(predictions == test_y, axis=1)))
+    macro_f1 = float(f1_score(test_y, predictions, average="macro", zero_division=0))
+    per_class_recall = tuple(
+        float(value) for value in recall_score(test_y, predictions, average=None, zero_division=0)
+    )
 
     model_path = output_dir / "model.joblib"
     submission_path = output_dir / "submission.txt"
@@ -232,6 +287,8 @@ def run_demo(output_dir: Path, seed: int = RANDOM_SEED, train_samples_per_class:
         train_samples=len(train_samples),
         test_samples=len(test_samples),
         exact_match_accuracy=accuracy,
+        macro_f1=macro_f1,
+        per_class_recall=per_class_recall,
         threshold=threshold,
         submission_path=str(submission_path.resolve()),
         model_path=str(model_path.resolve()),

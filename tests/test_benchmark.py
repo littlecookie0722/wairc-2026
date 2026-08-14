@@ -36,3 +36,36 @@ def test_synthetic_benchmark_cli_accepts_profile_and_output_dir(tmp_path, capsys
     output = capsys.readouterr().out
     assert "Synthetic benchmark passed" in output
     assert (tmp_path / "cli" / "benchmark-report.json").exists()
+
+
+def test_robustness_small_reports_each_controlled_condition(tmp_path):
+    result = run_benchmark(tmp_path / "robustness", profile="robustness-small", seed=2026)
+
+    manifest = json.loads(
+        (tmp_path / "robustness" / "benchmark-manifest.json").read_text(encoding="utf-8")
+    )
+    report = json.loads(
+        (tmp_path / "robustness" / "benchmark-report.json").read_text(encoding="utf-8")
+    )
+    conditions = report["metrics"]["conditions"]
+
+    assert result.profile == "robustness-small"
+    assert [condition["name"] for condition in manifest["evaluation"]["conditions"]] == [
+        "baseline",
+        "high-noise",
+        "node0-missing",
+    ]
+    assert [condition["name"] for condition in conditions] == [
+        "baseline",
+        "high-noise",
+        "node0-missing",
+    ]
+    assert all(0.0 <= condition["metrics"]["exact_match_accuracy"] <= 1.0 for condition in conditions)
+    assert all(len(condition["metrics"]["per_class_recall"]) == 9 for condition in conditions)
+    assert all(
+        (tmp_path / "robustness" / condition["artifacts"][0]).exists()
+        and (tmp_path / "robustness" / condition["artifacts"][1]).exists()
+        for condition in conditions
+    )
+    assert str(tmp_path) not in json.dumps(manifest)
+    assert str(tmp_path) not in json.dumps(report)

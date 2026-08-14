@@ -57,16 +57,17 @@ was released on 2026-08-12 with the following foundations:
 - A read-only `SigMFDatasetAdapter` now maps one supported local recording to
   one unlabeled `RFSample` without changing competition labels or submission
   behavior.
-- A deterministic `cpu-smoke` synthetic benchmark now records its fixed
-  generator, data, transform, training, and evaluation inputs in
-  `benchmark-manifest-v1`, and writes a path-safe `benchmark-report-v1` with a
-  deterministic signature.
+- Deterministic `cpu-smoke` and `robustness-small` synthetic benchmark profiles
+  now record fixed generator, data, transform, training, and evaluation inputs
+  in `benchmark-manifest-v1`, and write path-safe `benchmark-report-v1` records
+  with deterministic signatures. The robustness profile covers higher noise
+  and node-0 absence without making real-data claims.
 
-## Next: robustness benchmark profiles
+## Next: benchmark summaries and expanded perturbations
 
-- Add controlled SNR, frequency-offset, timing-offset, gain, and missing-node
-  profiles while keeping synthetic results separate from real-data claims.
 - Add a compact Markdown summary generated from the machine-readable report.
+- Add controlled frequency-offset, timing-offset, and gain conditions while
+  keeping synthetic results separate from real-data claims.
 
 ## Later: public interoperability and benchmarks
 

@@ -48,8 +48,8 @@ ensemble inference -> 9-value submission
   and missing nodes.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
-- Reproducible `wairc benchmark run --profile cpu-smoke` with path-safe
-  manifest/report files for synthetic functional checks.
+- Reproducible `wairc benchmark run --profile cpu-smoke` and controlled
+  `robustness-small` checks with path-safe manifest/report files.
 - Archived early baselines under archived_baselines.
 
 The current public repository is intentionally still a competition-oriented
@@ -106,8 +106,8 @@ data, and it may vary if the seed or dependency versions change.
 This writes `benchmark-manifest.json` and `benchmark-report.json` under
 `outputs/benchmark/`. The report includes a deterministic signature over the
 fixed synthetic inputs and metrics; runtime is recorded separately. See the
-[synthetic benchmark guide](docs/benchmark.md) for the report schema and its
-synthetic-only boundary.
+[synthetic benchmark guide](docs/benchmark.md) for the profiles, report schema,
+and synthetic-only boundary.
 
 List the unified commands with:
 

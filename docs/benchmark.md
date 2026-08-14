@@ -20,6 +20,17 @@ The command generates a self-contained synthetic demo under the selected
 directory and validates its submission. Generated datasets, models, and
 reports are local outputs and should not be committed.
 
+The controlled robustness profile runs the same clean training workflow
+against three test conditions:
+
+    wairc benchmark run --profile robustness-small
+
+- `baseline`: the default noise and periodic missing-node pattern;
+- `high-noise`: noise standard deviation `0.20` with the default node pattern;
+- `node0-missing`: the first receiver node is absent for every test sample.
+
+Each condition is evaluated independently with its own local demo artifacts.
+
 ## Machine-readable files
 
 `benchmark-manifest.json` records the inputs and compatibility boundary:
@@ -34,8 +45,10 @@ reports are local outputs and should not be committed.
 `benchmark-report.json` records the result:
 
 - `schemaVersion`: `benchmark-report-v1`;
-- profile, seed, `passed` status, exact-match accuracy, threshold, and sample
-  counts;
+- profile, seed, `passed` status, exact-match accuracy, macro F1, per-class
+  recall, threshold, and sample counts;
+- for `robustness-small`, a `metrics.conditions` list with the same metrics for
+  each named condition;
 - a SHA-256 `deterministic_signature` over the manifest and deterministic
   metrics;
 - runtime and relative artifact names for local inspection.
@@ -46,6 +59,6 @@ behavior should produce the same deterministic metrics and signature. A
 signature match does not establish real-data accuracy, hardware equivalence,
 or competition performance.
 
-The initial profile uses two training samples per class so it remains suitable
-for a CPU smoke check. Robustness profiles for controlled SNR, offsets, gain,
-and missing-node perturbations are follow-up work.
+Both profiles use two training samples per class so they remain suitable for a
+CPU smoke check. Frequency-offset, timing-offset, and gain perturbations are
+follow-up work.

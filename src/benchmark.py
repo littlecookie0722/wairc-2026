@@ -11,6 +11,7 @@ from .config import NUM_CLASSES, RANDOM_SEED
 from .synthetic_demo import (
     CLASS_FREQUENCIES,
     DemoResult,
+    MISSING_NODE_PATTERN,
     NODE_FREQUENCY_OFFSET,
     NOISE_STD,
     SAMPLE_RATE,
@@ -30,13 +31,31 @@ BENCHMARK_GENERATOR_NAME = "wairc.synthetic_iq"
 
 
 @dataclass(frozen=True)
+class BenchmarkCondition:
+    name: str
+    noise_std: float
+    missing_node_pattern: tuple[int | None, ...]
+    artifact_dir: str
+
+
+@dataclass(frozen=True)
 class BenchmarkProfile:
     name: str
     train_samples_per_class: int
+    conditions: tuple[BenchmarkCondition, ...] = ()
 
 
 BENCHMARK_PROFILES = {
     "cpu-smoke": BenchmarkProfile(name="cpu-smoke", train_samples_per_class=2),
+    "robustness-small": BenchmarkProfile(
+        name="robustness-small",
+        train_samples_per_class=2,
+        conditions=(
+            BenchmarkCondition("baseline", NOISE_STD, MISSING_NODE_PATTERN, "conditions/baseline"),
+            BenchmarkCondition("high-noise", 0.20, MISSING_NODE_PATTERN, "conditions/high-noise"),
+            BenchmarkCondition("node0-missing", NOISE_STD, (0,), "conditions/node0-missing"),
+        ),
+    ),
 }
 
 
@@ -53,6 +72,14 @@ class BenchmarkResult:
 
 def _canonical_json(value: object) -> bytes:
     return json.dumps(value, ensure_ascii=True, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _condition_manifest(condition: BenchmarkCondition) -> dict[str, object]:
+    return {
+        "name": condition.name,
+        "noise_std": condition.noise_std,
+        "missing_node_pattern": list(condition.missing_node_pattern),
+    }
 
 
 def _manifest(profile: BenchmarkProfile, seed: int) -> dict[str, object]:
@@ -73,7 +100,7 @@ def _manifest(profile: BenchmarkProfile, seed: int) -> dict[str, object]:
             "signal_sample_count": SIGNAL_SAMPLE_COUNT,
             "noise_std": NOISE_STD,
             "node_frequency_offset_hz": NODE_FREQUENCY_OFFSET,
-            "missing_node_pattern": [0, 1, 2, None],
+            "missing_node_pattern": list(MISSING_NODE_PATTERN),
         },
         "transform": {
             "profile": "stft-v1",
@@ -91,7 +118,15 @@ def _manifest(profile: BenchmarkProfile, seed: int) -> dict[str, object]:
         },
         "evaluation": {
             "metric": "exact_match_accuracy",
+            "additional_metrics": ["macro_f1", "per_class_recall"],
             "synthetic_only": True,
+            "conditions": [
+                _condition_manifest(condition)
+                for condition in (
+                    profile.conditions
+                    or (BenchmarkCondition("cpu-smoke", NOISE_STD, MISSING_NODE_PATTERN, "demo"),)
+                )
+            ],
         },
     }
 
@@ -99,6 +134,8 @@ def _manifest(profile: BenchmarkProfile, seed: int) -> dict[str, object]:
 def _metrics(result: DemoResult) -> dict[str, object]:
     return {
         "exact_match_accuracy": float(result.exact_match_accuracy),
+        "macro_f1": float(result.macro_f1),
+        "per_class_recall": [float(value) for value in result.per_class_recall],
         "threshold": float(result.threshold),
         "train_samples": int(result.train_samples),
         "test_samples": int(result.test_samples),
@@ -133,12 +170,42 @@ def run_benchmark(
     _write_json(manifest_path, manifest)
 
     started = time.perf_counter()
-    demo_result = run_demo(
-        output_dir / "demo",
-        seed=seed,
-        train_samples_per_class=selected_profile.train_samples_per_class,
-    )
-    metrics = _metrics(demo_result)
+    if selected_profile.conditions:
+        condition_metrics: list[dict[str, object]] = []
+        for condition in selected_profile.conditions:
+            demo_result = run_demo(
+                output_dir / condition.artifact_dir,
+                seed=seed,
+                train_samples_per_class=selected_profile.train_samples_per_class,
+                test_noise_std=condition.noise_std,
+                test_missing_node_pattern=condition.missing_node_pattern,
+            )
+            condition_metrics.append(
+                {
+                    "name": condition.name,
+                    "metrics": _metrics(demo_result),
+                    "artifacts": [
+                        f"{condition.artifact_dir}/metrics.json",
+                        f"{condition.artifact_dir}/submission.txt",
+                    ],
+                }
+            )
+        metrics: dict[str, object] = {"conditions": condition_metrics}
+        exact_match_accuracy = float(condition_metrics[0]["metrics"]["exact_match_accuracy"])
+        artifacts = [
+            artifact
+            for condition in condition_metrics
+            for artifact in condition["artifacts"]
+        ]
+    else:
+        demo_result = run_demo(
+            output_dir / "demo",
+            seed=seed,
+            train_samples_per_class=selected_profile.train_samples_per_class,
+        )
+        metrics = _metrics(demo_result)
+        exact_match_accuracy = float(demo_result.exact_match_accuracy)
+        artifacts = ["demo/metrics.json", "demo/submission.txt"]
     deterministic_signature = _signature(manifest, metrics)
     report = {
         "schemaVersion": BENCHMARK_REPORT_SCHEMA,
@@ -149,7 +216,7 @@ def run_benchmark(
         "deterministic_signature": deterministic_signature,
         "runtime_seconds": round(time.perf_counter() - started, 6),
         "manifest": manifest_path.name,
-        "artifacts": ["demo/metrics.json", "demo/submission.txt"],
+        "artifacts": artifacts,
     }
     _write_json(report_path, report)
     return BenchmarkResult(
@@ -158,7 +225,7 @@ def run_benchmark(
         seed=seed,
         manifest_path=str(manifest_path.resolve()),
         report_path=str(report_path.resolve()),
-        exact_match_accuracy=float(demo_result.exact_match_accuracy),
+        exact_match_accuracy=exact_match_accuracy,
         deterministic_signature=deterministic_signature,
     )
 
@@ -178,7 +245,12 @@ def main(argv: list[str] | None = None) -> None:
     result = run_benchmark(args.output_dir, profile=args.profile, seed=args.seed)
     print("Synthetic benchmark passed")
     print(f"Profile: {result.profile}")
-    print(f"Synthetic exact-match accuracy: {result.exact_match_accuracy:.3f}")
+    metric_label = (
+        "Baseline synthetic exact-match accuracy"
+        if result.profile == "robustness-small"
+        else "Synthetic exact-match accuracy"
+    )
+    print(f"{metric_label}: {result.exact_match_accuracy:.3f}")
     print(f"Manifest: {result.manifest_path}")
     print(f"Report: {result.report_path}")
 
