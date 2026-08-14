@@ -80,8 +80,7 @@ was released on 2026-08-14 with the following verified capabilities:
 ## Released: v0.6.0 interoperability and CPU reproducibility
 
 - [v0.6.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.6.0)
-  is prepared for publication on 2026-08-14 with the following verified
-  capabilities:
+  was released on 2026-08-14 with the following verified capabilities:
 - The reusable `stft-v1` numerical kernel lives independently of model,
   dataset, and training workflows. The existing `src.spectrogram` wrapper and
   the stable `wairc_rf` API share that kernel, with regression coverage for
