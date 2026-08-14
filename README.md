@@ -240,7 +240,10 @@ original terms.
 - [Synthetic benchmark](docs/benchmark.md): reproducible CPU profile and
   machine-readable manifest/report contract.
 - [Redistributable benchmark fixture](tests/fixtures/benchmark/synthetic_iq_v1.json):
-  repository-authored parameter manifest without raw recordings or model data.
+  repository-authored `cpu-smoke` parameter manifest without raw recordings or
+  model data.
+- [Robustness benchmark fixture](tests/fixtures/benchmark/synthetic_iq_robustness_v1.json):
+  repository-authored seven-condition manifest without generated artifacts.
 - [CPU compatibility probe](docs/reproducibility.md): data-free public-transform,
   eager CPU-model, and TorchScript CPU checks across the supported Python matrix.
 - [Reproducibility](docs/reproducibility.md): current limits and required records.

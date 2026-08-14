@@ -5,7 +5,11 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Future unreleased changes will be listed here before the next release.
+### Added
+
+- A redistributable `benchmark-fixture-v1` parameter manifest now covers the
+  seven-condition `robustness-small` profile, including its expected report
+  signature. It contains no generated IQ, model outputs, or private labels.
 
 ## [0.7.0] - 2026-08-14
 
