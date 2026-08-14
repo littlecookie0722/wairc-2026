@@ -54,7 +54,7 @@ flowchart LR
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
-| src/cpu_compatibility.py | Data-free public-transform and CPU-model compatibility probe | supported Python/CPU execution boundary |
+| src/cpu_compatibility.py | Data-free public-transform, eager CPU-model, and TorchScript CPU compatibility probe | supported Python/CPU execution boundary |
 | src/benchmark.py | Run named synthetic profiles, write path-safe manifest/report records, and render Markdown summaries | `benchmark-manifest-v1`, `benchmark-report-v1`, synthetic-only metrics |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
 | wairc_rf/_stft.py | Shared numerical `stft-v1` kernel independent of datasets and models | `stft-v1` values and legacy fallback boundary |

@@ -40,8 +40,18 @@ def run_cpu_compatibility() -> dict[str, object]:
     inputs = torch.from_numpy(np.stack([interleaved] * 3, axis=0)[None]).to(device)
     with torch.inference_mode():
         logits = model(inputs)
+        scripted_model = torch.jit.trace(model, inputs)
+        scripted_logits = scripted_model(inputs)
     if logits.shape != (1, 9) or not torch.isfinite(logits).all():
         raise AssertionError("CPU model output is invalid")
+    if scripted_logits.shape != logits.shape or not torch.isfinite(scripted_logits).all():
+        raise AssertionError("TorchScript CPU model output is invalid")
+    max_abs_difference = float(torch.max(torch.abs(logits - scripted_logits)).cpu())
+    if not torch.allclose(logits, scripted_logits, rtol=1e-5, atol=1e-5):
+        raise AssertionError(
+            "Eager and TorchScript CPU model outputs differ "
+            f"(max_abs_difference={max_abs_difference})"
+        )
 
     return {
         "python": platform.python_version(),
@@ -50,6 +60,8 @@ def run_cpu_compatibility() -> dict[str, object]:
         "device": str(device),
         "stft_shape": list(interleaved.shape),
         "logits_shape": list(logits.shape),
+        "torchscript_logits_shape": list(scripted_logits.shape),
+        "torchscript_max_abs_difference": max_abs_difference,
     }
 
 
