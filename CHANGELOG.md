@@ -5,11 +5,22 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+Future unreleased changes will be listed here before the next release.
+
+## [0.8.0] - 2026-08-14
+
 ### Added
 
 - A redistributable `benchmark-fixture-v1` parameter manifest now covers the
   seven-condition `robustness-small` profile, including its expected report
   signature. It contains no generated IQ, model outputs, or private labels.
+
+### Compatibility
+
+- The existing `cpu-smoke` fixture and benchmark profile remain unchanged.
+- The new fixture is an input contract only; generated benchmark artifacts,
+  competition data, checkpoints, and private labels remain outside the source
+  distribution and wheel.
 
 ## [0.7.0] - 2026-08-14
 
