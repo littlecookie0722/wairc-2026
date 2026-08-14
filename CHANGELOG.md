@@ -5,7 +5,9 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Current unreleased changes are listed here before the next release.
+Future unreleased changes will be listed here before the next release.
+
+## [0.4.0] - 2026-08-14
 
 ### Added
 
