@@ -15,6 +15,8 @@ Current unreleased changes are listed here before the next release.
 - Public `RFNode`/`RFSample` contracts, the `RFDatasetAdapter` sequence
   protocol, `SyntheticDatasetAdapter`, and a strict lazy
   `CompetitionDatasetAdapter` for the existing three-node CSV/NPZ schema.
+- Experimental metadata-only SigMF subset parser and a synthetic fixture for
+  single-channel complex recordings.
 
 ### Compatibility
 

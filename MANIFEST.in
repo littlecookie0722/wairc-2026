@@ -10,6 +10,7 @@ include docs/architecture.md
 include docs/public-api.md
 include docs/release-checklist.md
 include docs/reproducibility.md
+include docs/sigmf.md
 include docs/releases/v0.1.0.md
 include docs/releases/v0.2.0.md
 include docs/releases/v0.3.0.md

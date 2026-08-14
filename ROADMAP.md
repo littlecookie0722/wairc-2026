@@ -52,10 +52,12 @@ was released on 2026-08-12 with the following foundations:
 - Public `RFNode`/`RFSample` contracts, `SyntheticDatasetAdapter`, and a strict
   competition CSV/NPZ adapter now provide an additive generic sequence path
   while preserving the legacy loader and training dataset.
+- Experimental SigMF metadata-subset parsing and a synthetic fixture now define
+  the supported single-channel complex-recording boundary.
 
-## Next: broader public interoperability and benchmarks
+## Next: SigMF raw import and public benchmarks
 
-- Evaluate SigMF import as an optional interoperability path.
+- Add a read-only `.sigmf-data` import path against the documented subset.
 
 ## Later: public interoperability and benchmarks
 

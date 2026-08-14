@@ -50,6 +50,22 @@ row and NPZ fields. Labeled samples expose sorted, unique zero-based label
 indices, while public-test samples expose `labels=None`. Relative IQ paths are
 required to remain inside the dataset root, including after symlink resolution.
 
+## Experimental SigMF metadata
+
+The metadata-only parser is intentionally not part of the stable top-level
+imports yet. Use it explicitly while the raw-data adapter is being developed:
+
+```python
+from wairc_rf.sigmf import parse_sigmf_metadata
+
+metadata = parse_sigmf_metadata("recording.sigmf-meta")
+print(metadata.datatype, metadata.sample_rate, metadata.captures)
+```
+
+See [SigMF interoperability](sigmf.md) for the supported subset and rejected
+file-layout semantics. It does not change `stft-v1`, the competition label
+mapping, or the existing dataset adapters.
+
 ## STFT profile v1
 
 ```python
