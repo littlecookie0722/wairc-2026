@@ -68,7 +68,8 @@ was released on 2026-08-14 with the following verified capabilities:
 
 ## Unreleased: benchmark summaries and expanded perturbations
 
-- Add a compact Markdown summary generated from the machine-readable report.
+- `wairc benchmark summarize` now renders a compact path-safe Markdown summary
+  from `benchmark-report-v1` for routine review.
 - Add controlled frequency-offset, timing-offset, and gain conditions while
   keeping synthetic results separate from real-data claims.
 

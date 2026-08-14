@@ -1,6 +1,6 @@
 import json
 
-from src.benchmark import run_benchmark
+from src.benchmark import run_benchmark, write_benchmark_summary
 
 
 def test_synthetic_benchmark_writes_path_free_deterministic_report(tmp_path):
@@ -37,6 +37,20 @@ def test_synthetic_benchmark_cli_accepts_profile_and_output_dir(tmp_path, capsys
     assert "Synthetic benchmark passed" in output
     assert (tmp_path / "cli" / "benchmark-report.json").exists()
 
+    from src.cli import main as cli_main
+
+    cli_main(
+        [
+            "benchmark",
+            "summarize",
+            str(tmp_path / "cli" / "benchmark-report.json"),
+            "--output",
+            str(tmp_path / "cli" / "summary.md"),
+        ]
+    )
+    assert "Benchmark summary:" in capsys.readouterr().out
+    assert (tmp_path / "cli" / "summary.md").exists()
+
 
 def test_robustness_small_reports_each_controlled_condition(tmp_path):
     result = run_benchmark(tmp_path / "robustness", profile="robustness-small", seed=2026)
@@ -69,3 +83,26 @@ def test_robustness_small_reports_each_controlled_condition(tmp_path):
     )
     assert str(tmp_path) not in json.dumps(manifest)
     assert str(tmp_path) not in json.dumps(report)
+
+
+def test_benchmark_summary_renders_cpu_and_robustness_reports(tmp_path):
+    cpu_output = tmp_path / "cpu"
+    robust_output = tmp_path / "robust"
+    run_benchmark(cpu_output, profile="cpu-smoke", seed=2026)
+    run_benchmark(robust_output, profile="robustness-small", seed=2026)
+
+    cpu_summary = write_benchmark_summary(cpu_output / "benchmark-report.json")
+    robust_summary = write_benchmark_summary(
+        robust_output / "benchmark-report.json", tmp_path / "robust-summary.md"
+    )
+    cpu_text = cpu_summary.read_text(encoding="utf-8")
+    robust_text = robust_summary.read_text(encoding="utf-8")
+
+    assert "# Synthetic benchmark summary" in cpu_text
+    assert "| `cpu-smoke` |" in cpu_text
+    assert "Synthetic-only: `true`" in cpu_text
+    assert "| `baseline` |" in robust_text
+    assert "| `high-noise` |" in robust_text
+    assert "| `node0-missing` |" in robust_text
+    assert str(tmp_path) not in cpu_text
+    assert str(tmp_path) not in robust_text

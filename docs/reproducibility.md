@@ -182,6 +182,11 @@ deviation of `0.20`, and test samples with node 0 missing. Its report keeps the
 metrics and relative artifacts nested under each condition, so the comparison
 does not depend on local absolute paths.
 
+For a human-readable review artifact, render the report without copying local
+paths into the document:
+
+    wairc benchmark summarize outputs/benchmark/benchmark-report.json
+
 Data-backed checks:
 
     python -m src.train_spectrogram_kfold --tag r34 --arch resnet34 --fold 0 --epochs 1 --num-workers 0

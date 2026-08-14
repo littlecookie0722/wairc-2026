@@ -31,6 +31,18 @@ against three test conditions:
 
 Each condition is evaluated independently with its own local demo artifacts.
 
+## Render a Markdown summary
+
+Turn a machine-readable report into a compact review document with:
+
+    wairc benchmark summarize outputs/benchmark/benchmark-report.json
+
+The default output is `benchmark-summary.md` next to the report. Use
+`--output` to choose another local path. The summary validates the
+`benchmark-report-v1` schema, displays the CPU or per-condition metrics, keeps
+the deterministic signature, and lists only the report's relative artifact
+names.
+
 ## Machine-readable files
 
 `benchmark-manifest.json` records the inputs and compatibility boundary:
