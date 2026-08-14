@@ -215,6 +215,8 @@ original terms.
 - [Architecture](docs/architecture.md): current module and data-flow boundaries.
 - [Public Python API](docs/public-api.md): stable imports and the versioned
   `stft-v1` transform contract.
+- [SigMF interoperability](docs/sigmf.md): experimental metadata subset and
+  explicit raw-data compatibility boundary.
 - [Reproducibility](docs/reproducibility.md): current limits and required records.
 - [Release checklist](docs/release-checklist.md): the v0.3.0 release record and
   future release gates.
