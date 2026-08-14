@@ -55,7 +55,7 @@ flowchart LR
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
-| wairc_rf/ | Stable public transform, label, RF sample, and synthetic/competition dataset-adapter imports plus an experimental SigMF metadata parser | `stft-v1` behavior, label helpers, dataset sample contracts, and explicit SigMF subset |
+| wairc_rf/ | Stable public transform, label, RF sample, and synthetic/competition dataset-adapter imports plus an experimental SigMF metadata/recording adapter | `stft-v1` behavior, label helpers, dataset sample contracts, and explicit SigMF subset |
 
 ## Main workflows
 

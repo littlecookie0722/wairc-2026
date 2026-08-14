@@ -54,10 +54,13 @@ was released on 2026-08-12 with the following foundations:
   while preserving the legacy loader and training dataset.
 - Experimental SigMF metadata-subset parsing and a synthetic fixture now define
   the supported single-channel complex-recording boundary.
+- A read-only `SigMFDatasetAdapter` now maps one supported local recording to
+  one unlabeled `RFSample` without changing competition labels or submission
+  behavior.
 
-## Next: SigMF raw import and public benchmarks
+## Next: public benchmarks
 
-- Add a read-only `.sigmf-data` import path against the documented subset.
+- Add a deterministic synthetic benchmark fixture and machine-readable report.
 
 ## Later: public interoperability and benchmarks
 

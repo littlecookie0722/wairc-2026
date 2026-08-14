@@ -5,10 +5,15 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections.abc import Sequence
 from dataclasses import dataclass
 from numbers import Integral, Real
 from pathlib import Path, PureWindowsPath
-from typing import Literal
+from typing import Literal, overload
+
+import numpy as np
+
+from .datasets import RFNode, RFSample
 
 
 _VERSION_RE = re.compile(r"^(\d+)\.(\d+)\.(\d+)$")
@@ -53,6 +58,79 @@ class SigMFMetadata:
         if self.datatype[1] == "f":
             return "complex"
         return "interleaved"
+
+
+class SigMFDatasetAdapter(Sequence[RFSample]):
+    """Read one supported SigMF recording as a single unlabeled RF sample."""
+
+    def __init__(self, metadata_path: str | Path, data_path: str | Path | None = None) -> None:
+        self._metadata_path = Path(metadata_path).resolve()
+        self.metadata = parse_sigmf_metadata(self._metadata_path)
+        if self.metadata.metadata_only:
+            raise ValueError("SigMF metadata_only recordings do not contain a dataset to load")
+        self._data_path = self._resolve_data_path(data_path)
+        self._sample_id = self._metadata_path.name.removesuffix(".sigmf-meta")
+
+    @property
+    def sample_ids(self) -> tuple[str, ...]:
+        return (self._sample_id,)
+
+    def __len__(self) -> int:
+        return 1
+
+    @overload
+    def __getitem__(self, index: int) -> RFSample: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[RFSample]: ...
+
+    def __getitem__(self, index: int | slice) -> RFSample | list[RFSample]:
+        if isinstance(index, slice):
+            return [self[item] for item in range(*index.indices(len(self)))]
+        if isinstance(index, bool) or index not in (0, -1):
+            raise IndexError("SigMF recording adapter contains one sample")
+
+        values = self._read_data()
+        node = RFNode(values, self.metadata.sample_rate)
+        return RFSample(sample_id=self._sample_id, nodes=(node,), labels=None)
+
+    def _resolve_data_path(self, data_path: str | Path | None) -> Path:
+        parent = self._metadata_path.parent
+        if data_path is None:
+            if self.metadata.dataset is not None:
+                candidate = parent / self.metadata.dataset
+            else:
+                candidate = self._metadata_path.with_suffix(".sigmf-data")
+        else:
+            candidate = Path(data_path)
+            if not candidate.is_absolute():
+                candidate = parent / candidate
+
+        try:
+            resolved = candidate.resolve(strict=True)
+        except FileNotFoundError as exc:
+            raise FileNotFoundError(f"SigMF dataset file not found: {candidate.name}") from exc
+        if resolved.parent != parent:
+            raise ValueError("SigMF dataset file must remain in the metadata directory")
+        if not resolved.is_file():
+            raise ValueError(f"SigMF dataset path is not a file: {resolved.name}")
+        return resolved
+
+    def _read_data(self) -> np.ndarray:
+        dtype = _sigmf_numpy_dtype(self.metadata.datatype)
+        try:
+            byte_size = self._data_path.stat().st_size
+        except OSError as exc:
+            raise FileNotFoundError(f"SigMF dataset file is unavailable: {self._data_path.name}") from exc
+        if byte_size % dtype.itemsize != 0:
+            raise ValueError("SigMF dataset byte length is not aligned to its datatype")
+
+        values = np.fromfile(self._data_path, dtype=dtype)
+        if values.size == 0:
+            raise ValueError("SigMF dataset contains no samples")
+        if not np.issubdtype(values.dtype, np.complexfloating) and values.size % 2 != 0:
+            raise ValueError("SigMF interleaved IQ dataset must contain complete I/Q pairs")
+        return values
 
 
 def parse_sigmf_metadata(metadata_path: str | Path) -> SigMFMetadata:
@@ -141,6 +219,27 @@ def parse_sigmf_metadata(metadata_path: str | Path) -> SigMFMetadata:
         metadata_only=metadata_only,
         num_channels=num_channels,
     )
+
+
+def _sigmf_numpy_dtype(datatype: str) -> np.dtype:
+    match = _DATATYPE_RE.fullmatch(datatype)
+    if match is None:
+        raise ValueError(f"Unsupported SigMF complex datatype: {datatype!r}")
+    kind = match.group("kind")
+    code = {
+        "f32": "c8",
+        "f64": "c16",
+        "i32": "i4",
+        "i16": "i2",
+        "u32": "u4",
+        "u16": "u2",
+        "i8": "i1",
+        "u8": "u1",
+    }[kind]
+    byteorder = match.group("byteorder")
+    if byteorder is None or kind in {"i8", "u8"}:
+        return np.dtype(code)
+    return np.dtype(("<" if byteorder == "le" else ">") + code)
 
 
 def _require_string(values: dict, key: str) -> str:
