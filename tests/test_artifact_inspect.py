@@ -5,6 +5,7 @@ import pytest
 import torch
 
 from src.artifact_cli import main as artifact_main
+from src.artifact_index import build_artifact_index
 from src.artifact_inspect import inspect_artifact, validate_run_manifest
 from src.cache_artifact import write_cache_artifact
 from src.checkpoint import make_checkpoint_payload
@@ -64,7 +65,7 @@ def _write_versioned_artifacts(tmp_path):
     return {"checkpoint": checkpoint, "oof": oof, "rule": rule, "cache": cache}
 
 
-def _write_manifest(tmp_path, *, mismatch=False):
+def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
     paths = _write_versioned_artifacts(tmp_path)
     checkpoint_payload = torch.load(paths["checkpoint"], map_location="cpu")
     checkpoint_payload["fold"] = 0
@@ -90,6 +91,8 @@ def _write_manifest(tmp_path, *, mismatch=False):
     (tmp_path / "config.json").write_text("{}", encoding="utf-8")
     (tmp_path / "history.json").write_text("[]", encoding="utf-8")
     manifest_path = tmp_path / "run-manifest.json"
+    if with_index:
+        manifest["artifactIndex"] = build_artifact_index(manifest["runId"], tmp_path, manifest["outputs"])
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     return manifest_path
 
@@ -142,6 +145,8 @@ def test_validate_run_manifest_checks_linked_artifacts_without_paths(tmp_path):
     assert result["valid"] is True
     assert result["artifactType"] == "run-manifest"
     assert result["details"]["outputCount"] == 5
+    assert result["details"]["artifactIndexPresent"] is False
+    assert result["details"]["indexedArtifactCount"] == 0
     assert str(tmp_path) not in json.dumps(result)
 
 
@@ -175,6 +180,98 @@ def test_validate_run_manifest_rejects_unsafe_output_reference(tmp_path):
 
     assert result["valid"] is False
     assert "checkpoint references an unsafe path" in result["errors"]
+
+
+def test_validate_run_manifest_checks_artifact_index_integrity(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True)
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is True
+    assert result["details"]["artifactIndexPresent"] is True
+    assert result["details"]["indexedArtifactCount"] == 3
+
+    rule_path = tmp_path / "rule.json"
+    rule_payload = json.loads(rule_path.read_text(encoding="utf-8"))
+    rule_payload["note"] = "changed after indexing"
+    rule_path.write_text(json.dumps(rule_payload), encoding="utf-8")
+
+    changed = validate_run_manifest(path)
+    assert changed["valid"] is False
+    assert "artifactIndex size mismatch for rule.json" in changed["errors"]
+    assert "artifactIndex digest mismatch for rule.json" in changed["errors"]
+
+
+def test_validate_run_manifest_rejects_incomplete_artifact_index(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["artifactIndex"]["artifacts"].pop()
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "artifactIndex entries do not match manifest artifact outputs" in result["errors"]
+
+
+def test_validate_run_manifest_rejects_malformed_artifact_index_without_paths(tmp_path):
+    path = _write_manifest(tmp_path)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["artifactIndex"] = []
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "artifactIndex must be an object" in result["errors"]
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_validate_run_manifest_rejects_unsafe_artifact_index_filename_without_paths(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["artifactIndex"]["artifacts"][0]["fileName"] = str(tmp_path / "model.pth")
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "artifactIndex entry has an unsafe filename" in result["errors"]
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_validate_run_manifest_strictly_checks_indexed_fold_and_tag(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    checkpoint_entry = next(
+        entry for entry in manifest["artifactIndex"]["artifacts"] if entry["role"] == "checkpoint"
+    )
+    checkpoint_entry["fold"] = False
+    checkpoint_entry["tag"] = "other"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "artifactIndex fold mismatch for model.pth" in result["errors"]
+    assert "artifactIndex tag mismatch for model.pth" in result["errors"]
+
+
+def test_build_artifact_index_rejects_unsafe_output_without_leaking_path(tmp_path):
+    unsafe_name = str(tmp_path / "model.pth")
+
+    with pytest.raises(ValueError) as error:
+        build_artifact_index("demo-run", tmp_path, {"checkpoint": unsafe_name})
+
+    assert "filename in the run directory" in str(error.value)
+    assert str(tmp_path) not in str(error.value)
+
+
+def test_build_artifact_index_rejects_artifact_role_mismatch(tmp_path):
+    rule_path = _write_versioned_artifacts(tmp_path)["rule"]
+
+    with pytest.raises(ValueError, match="checkpoint has an unexpected artifact type"):
+        build_artifact_index("demo-run", tmp_path, {"checkpoint": rule_path.name})
 
 
 def test_artifact_cli_json_reports_invalid_artifact_and_returns_nonzero(tmp_path, capsys):

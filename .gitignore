@@ -16,6 +16,7 @@ outputs/runs/
 data_and_code/
 data_and_code_patch-1/
 .pytest_cache/
+/pytest-tmp-*/
 .ruff_cache/
 .coverage
 htmlcov/

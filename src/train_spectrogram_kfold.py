@@ -17,7 +17,13 @@ from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
 from .oof_artifact import write_oof_artifact
-from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
+from .run_manifest import (
+    create_run_manifest,
+    finalize_run_manifest,
+    finalize_run_manifest_with_artifacts,
+    make_run_id,
+    write_run_manifest,
+)
 from .spectrogram import (
     DroneClassifier,
     WarmupCosineLR,
@@ -253,7 +259,7 @@ def main() -> None:
 
         summary_path = args.save_dir / f"summary_{args.tag or 'default'}.json"
         summary_path.write_text(json.dumps(results, indent=2, ensure_ascii=False), encoding="utf-8")
-        finalize_run_manifest(
+        finalize_run_manifest_with_artifacts(
             manifest_path,
             "completed",
             outputs={
