@@ -7,6 +7,7 @@ from wairc_rf import (
     STFT_V1_PROFILE,
     STFTConfig,
     __version__,
+    complex_iq_to_spectrogram,
     iq_to_spectrogram,
     label_to_multihot,
     multihot_to_signature,
@@ -44,6 +45,25 @@ def test_public_stft_v1_is_numerically_identical_to_legacy_transform():
     assert public is not None
     assert legacy is not None
     np.testing.assert_array_equal(public, legacy)
+
+
+@pytest.mark.parametrize("dtype", [np.complex64, np.complex128])
+def test_public_complex_iq_is_exactly_equivalent_to_interleaved_stft_v1(dtype):
+    rng = np.random.default_rng(2027)
+    values = (rng.normal(size=1024) + 1j * rng.normal(size=1024)).astype(dtype)
+    original = values.copy()
+    interleaved = np.empty(values.size * 2, dtype=np.float32)
+    interleaved[0::2] = values.real
+    interleaved[1::2] = values.imag
+    config = STFTConfig(n_fft=64, hop=16, target_freq=33, target_time=48)
+
+    expected = iq_to_spectrogram(interleaved, sample_rate=2_000_000.0, config=config)
+    actual = complex_iq_to_spectrogram(values, sample_rate=2_000_000.0, config=config)
+
+    assert expected is not None
+    assert actual is not None
+    np.testing.assert_array_equal(actual, expected)
+    np.testing.assert_array_equal(values, original)
 
 
 def test_public_stft_v1_matches_frozen_golden_output():
@@ -99,11 +119,18 @@ def test_public_stft_v1_matches_frozen_golden_output():
         sample_rate=8_000.0,
         config=STFTConfig(n_fft=8, hop=4, target_freq=4, target_time=5),
     )
+    complex_actual = complex_iq_to_spectrogram(
+        raw[0::2].astype(np.float32) + 1j * raw[1::2].astype(np.float32),
+        sample_rate=8_000.0,
+        config=STFTConfig(n_fft=8, hop=4, target_freq=4, target_time=5),
+    )
 
     assert actual is not None
+    assert complex_actual is not None
     assert actual.shape == (4, 5)
     assert actual.dtype == np.float32
     np.testing.assert_allclose(actual, expected, rtol=2e-5, atol=2e-5)
+    np.testing.assert_array_equal(complex_actual, actual)
 
 
 @pytest.mark.parametrize(
@@ -134,6 +161,20 @@ def test_public_stft_rejects_ambiguous_iq_and_sample_rate():
         iq_to_spectrogram(np.zeros(128, dtype=np.int16), 0.0, STFTConfig(n_fft=64, hop=16))
     with pytest.raises(TypeError, match="real number"):
         iq_to_spectrogram(np.zeros(128, dtype=np.int16), True, STFTConfig(n_fft=64, hop=16))
+
+
+def test_public_complex_iq_validates_shape_dtype_and_short_recordings():
+    config = STFTConfig(n_fft=64, hop=16)
+
+    assert complex_iq_to_spectrogram(np.zeros(63, dtype=np.complex64), 1.0, config) is None
+    with pytest.raises(ValueError, match="one-dimensional"):
+        complex_iq_to_spectrogram(np.zeros((2, 64), dtype=np.complex64), 1.0, config)
+    with pytest.raises(TypeError, match="complex numeric"):
+        complex_iq_to_spectrogram(np.zeros(64, dtype=np.float32), 1.0, config)
+    with pytest.raises(ValueError, match="finite positive"):
+        complex_iq_to_spectrogram(np.zeros(64, dtype=np.complex64), 0.0, config)
+    with pytest.raises(TypeError, match="real number"):
+        complex_iq_to_spectrogram(np.zeros(64, dtype=np.complex64), True, config)
 
 
 def test_public_label_helpers_preserve_validated_legacy_contract():

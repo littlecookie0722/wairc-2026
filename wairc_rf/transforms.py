@@ -13,7 +13,7 @@ STFT_V1_PROFILE = "stft-v1"
 
 @dataclass(frozen=True, slots=True)
 class STFTConfig:
-    """Configuration for the released interleaved-IQ STFT transform.
+    """Configuration for the released STFT transform.
 
     The profile name versions behavior that is not fully expressed by numeric
     parameters, including DC removal, log-magnitude conversion, standardization,
@@ -97,3 +97,27 @@ def iq_to_spectrogram(
         target_freq=resolved.target_freq,
         target_time=resolved.target_time,
     )
+
+
+def complex_iq_to_spectrogram(
+    complex_iq: np.ndarray,
+    sample_rate: float,
+    config: STFTConfig | None = None,
+) -> np.ndarray | None:
+    """Convert one-dimensional complex IQ samples with the ``stft-v1`` profile.
+
+    Real and imaginary components are converted to the same float32
+    ``I,Q,I,Q,...`` representation consumed by :func:`iq_to_spectrogram`.
+    This preserves the existing transform and its short-recording behavior.
+    """
+
+    values = np.asarray(complex_iq)
+    if values.ndim != 1:
+        raise ValueError("complex_iq must be a one-dimensional array")
+    if not np.issubdtype(values.dtype, np.complexfloating):
+        raise TypeError("complex_iq must contain complex numeric values")
+
+    interleaved = np.empty(values.size * 2, dtype=np.float32)
+    interleaved[0::2] = values.real
+    interleaved[1::2] = values.imag
+    return iq_to_spectrogram(interleaved, sample_rate, config)
