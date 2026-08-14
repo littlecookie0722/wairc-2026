@@ -151,6 +151,8 @@ same_profile = complex_iq_to_spectrogram(
 
 See the [public Python API](docs/public-api.md) for the `stft-v1` compatibility
 contract, complex/interleaved input requirements, and exact-equivalence rule.
+The numerical kernel is independent of the competition model and dataset
+workflow; existing `src.*` entry points remain compatible wrappers.
 
 ### Verify without competition data
 

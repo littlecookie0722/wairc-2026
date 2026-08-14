@@ -11,7 +11,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as tvm
-from scipy.signal import stft as scipy_stft
 from torch.utils.data import Dataset
 
 from .config import NUM_CLASSES
@@ -37,29 +36,17 @@ def iq_to_spectrogram(
     target_freq: int | None = None,
     target_time: int | None = None,
 ) -> np.ndarray | None:
-    if iq_int16.size < n_fft * 2:
-        return None
+    from wairc_rf._stft import compute_stft_v1
 
-    raw = iq_int16.astype(np.float32, copy=False)
-    complex_iq = raw[0::2] + 1j * raw[1::2]
-    complex_iq = complex_iq - complex_iq.mean()
-
-    _, _, spec = scipy_stft(
-        complex_iq,
-        fs=sample_rate if sample_rate > 0 else 125e6,
-        nperseg=n_fft,
-        noverlap=n_fft - hop,
-        boundary=None,
-        padded=False,
+    return compute_stft_v1(
+        iq_int16,
+        sample_rate,
+        n_fft=n_fft,
+        hop=hop,
+        target_freq=target_freq,
+        target_time=target_time,
+        fallback_sample_rate=125e6,
     )
-    mag = np.log1p(np.abs(spec).astype(np.float32))
-    mag = (mag - mag.mean()) / (mag.std() + 1e-6)
-
-    if target_freq is not None and mag.shape[0] != target_freq:
-        mag = resize_axis(mag, target_freq, axis=0)
-    if target_time is not None and mag.shape[1] != target_time:
-        mag = resize_axis(mag, target_time, axis=1)
-    return mag.astype(np.float32)
 
 
 def resize_axis(arr: np.ndarray, target: int, axis: int) -> np.ndarray:

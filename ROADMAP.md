@@ -77,19 +77,23 @@ was released on 2026-08-14 with the following verified capabilities:
   timing-offset, and signal-gain conditions while keeping synthetic results
   separate from real-data claims.
 
+## Unreleased: transform isolation
+
+- The reusable `stft-v1` numerical kernel now lives independently of model,
+  dataset, and training workflows. The existing `src.spectrogram` wrapper and
+  the stable `wairc_rf` API share that kernel, with regression coverage for
+  frozen output and legacy sample-rate fallback behavior.
+
 ## Unreleased: next interoperability steps
 
-- Separate reusable RF transformations from competition-specific workflows.
 - Add documented benchmark fixtures that can be redistributed legally.
 - Expand CPU compatibility tests across supported Python versions.
 
 ## Later: public interoperability and benchmarks
 
-- Separate reusable RF transformations from competition-specific workflows.
 - Add documented benchmark fixtures that can be redistributed legally.
 - Expand CPU compatibility tests across supported Python versions.
-- Expand robustness protocols beyond the current noise and missing-node
-  conditions to cover frequency offset, timing offset, and gain changes.
+- Expand robustness protocols beyond the current six synthetic conditions.
 
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests

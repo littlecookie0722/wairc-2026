@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
 
+import src.spectrogram as legacy_spectrogram
 from src import __version__ as legacy_version
 from src.spectrogram import iq_to_spectrogram as legacy_iq_to_spectrogram
 from wairc_rf import (
@@ -45,6 +46,20 @@ def test_public_stft_v1_is_numerically_identical_to_legacy_transform():
     assert public is not None
     assert legacy is not None
     np.testing.assert_array_equal(public, legacy)
+
+
+def test_public_stft_kernel_is_independent_of_legacy_workflow(monkeypatch):
+    raw = np.arange(128, dtype=np.int16)
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("public transform should not call the legacy workflow")
+
+    monkeypatch.setattr(legacy_spectrogram, "iq_to_spectrogram", fail_if_called)
+
+    result = iq_to_spectrogram(raw, sample_rate=2_000_000.0, config=STFTConfig(n_fft=32, hop=8))
+
+    assert result is not None
+    assert result.dtype == np.float32
 
 
 @pytest.mark.parametrize("dtype", [np.complex64, np.complex128])

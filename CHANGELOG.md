@@ -5,7 +5,11 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-Future unreleased changes will be listed here before the next release.
+### Changed
+
+- The reusable `stft-v1` numerical kernel is now isolated from model, dataset,
+  and training code. The legacy `src.spectrogram` entry point reuses the same
+  kernel while retaining its historical non-positive sample-rate fallback.
 
 ## [0.5.0] - 2026-08-14
 

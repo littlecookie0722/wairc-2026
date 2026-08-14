@@ -7,6 +7,8 @@ from numbers import Integral, Real
 
 import numpy as np
 
+from ._stft import compute_stft_v1
+
 
 STFT_V1_PROFILE = "stft-v1"
 
@@ -87,9 +89,7 @@ def iq_to_spectrogram(
     if not np.isfinite(rate) or rate <= 0:
         raise ValueError("sample_rate must be a finite positive value")
 
-    from src.spectrogram import iq_to_spectrogram as _legacy_iq_to_spectrogram
-
-    return _legacy_iq_to_spectrogram(
+    return compute_stft_v1(
         values,
         rate,
         n_fft=resolved.n_fft,

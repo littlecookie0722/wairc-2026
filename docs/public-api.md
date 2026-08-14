@@ -142,11 +142,14 @@ boundaries. The competition dataset currently requests 257 frequency bins and
 a 1536-frame cache tensor before selecting a 768-frame training or evaluation
 crop; generic users should choose output sizes for their own data.
 
-The public implementations delegate valid inputs to the legacy transform and
-have exact interleaved/complex/delegate equality tests plus an independent
-frozen-output regression. Introducing phase channels, alternative
-normalization, or frequency-axis alignment requires a new profile instead of a
-silent change to `stft-v1`.
+The public implementations use a reusable numerical `stft-v1` kernel that has
+no dataset, model, or training dependency. The legacy `src.spectrogram`
+wrapper uses the same kernel, so exact interleaved/complex/legacy equality and
+the independent frozen-output regression protect both entry points. The legacy
+wrapper retains its historical 125 MHz fallback for a non-positive sample
+rate; the validated public API requires a finite positive rate. Introducing
+phase channels, alternative normalization, or frequency-axis alignment
+requires a new profile instead of a silent change to `stft-v1`.
 
 ## Labels
 
