@@ -24,7 +24,7 @@ The data-free demonstration follows a smaller public path:
 
 ```mermaid
 flowchart LR
-    A["Synthetic multi-node IQ"] --> B["Existing STFT transformation"]
+    A["Synthetic multi-node IQ"] --> B["Reusable stft-v1 kernel"]
     B --> C["Compact spectral features"]
     C --> D["CPU multi-label classifier"]
     D --> E["Submission writer and validator"]
@@ -36,7 +36,7 @@ flowchart LR
 | --- | --- | --- |
 | src/config.py | Repository-relative dataset and output paths, class count, seed, validation ratio | NUM_CLASSES, default paths |
 | src/data.py | index.csv validation, IQ path resolution, label parsing, multi-hot conversion, split helper | label signature and sample IDs |
-| src/spectrogram.py | STFT conversion, cache-backed dataset, model construction, losses, metrics, inference rules | STFT values, model inputs, rule semantics |
+| src/spectrogram.py | Legacy STFT wrapper, cache-backed dataset, model construction, losses, metrics, inference rules | STFT wrapper behavior, model inputs, rule semantics |
 | src/train_spectrogram.py | Single-model training, validation metrics, checkpoint/rule outputs, and run manifest | CLI arguments and checkpoint fields |
 | src/train_spectrogram_kfold.py | Stratified/K-fold training, per-fold checkpoints/OOF files, and run manifest | fold indices, OOF fields, tag naming |
 | src/run_manifest.py | Sanitized `run-manifest-v1` provenance records for training runs | manifest schema and privacy boundary |
@@ -56,6 +56,7 @@ flowchart LR
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | src/benchmark.py | Run named synthetic profiles, write path-safe manifest/report records, and render Markdown summaries | `benchmark-manifest-v1`, `benchmark-report-v1`, synthetic-only metrics |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
+| wairc_rf/_stft.py | Shared numerical `stft-v1` kernel independent of datasets and models | `stft-v1` values and legacy fallback boundary |
 | wairc_rf/ | Stable public transform, label, RF sample, and synthetic/competition dataset-adapter imports plus an experimental SigMF metadata/recording adapter | `stft-v1` behavior, label helpers, dataset sample contracts, and explicit SigMF subset |
 
 ## Main workflows
@@ -91,8 +92,9 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
 
 ## Current engineering gaps
 
-- Core STFT, dataset, model, training, and inference logic still lives in a
-  small set of script-oriented modules.
+- Dataset, model, training, and inference logic still lives in a small set of
+  script-oriented modules; the reusable `stft-v1` numerical kernel is now
+  isolated in `wairc_rf`.
 - The public `RFSample`/`RFNode` contract plus synthetic and competition
   adapters provide an additive interoperability path; the legacy training
   dataset still consumes its existing row/dataframe interface.

@@ -34,6 +34,17 @@ def test_iq_to_spectrogram_rejects_too_short_input():
     assert iq_to_spectrogram(raw, sample_rate=1.0, n_fft=64, hop=16) is None
 
 
+def test_legacy_iq_to_spectrogram_preserves_zero_rate_fallback():
+    raw = np.arange(128, dtype=np.int16)
+
+    fallback = iq_to_spectrogram(raw, sample_rate=0.0, n_fft=32, hop=8)
+    explicit = iq_to_spectrogram(raw, sample_rate=125_000_000.0, n_fft=32, hop=8)
+
+    assert fallback is not None
+    assert explicit is not None
+    np.testing.assert_array_equal(fallback, explicit)
+
+
 def test_classifier_forward_is_cpu_compatible_without_weights():
     model = DroneClassifier(num_classes=9, arch="resnet18", pretrained=False, dropout=0.0)
     model.eval()
