@@ -37,6 +37,9 @@ class BenchmarkCondition:
     noise_std: float
     missing_node_pattern: tuple[int | None, ...]
     artifact_dir: str
+    frequency_offset_hz: float = 0.0
+    timing_offset_samples: int = 0
+    signal_gain: float = 1.0
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,27 @@ BENCHMARK_PROFILES = {
             BenchmarkCondition("baseline", NOISE_STD, MISSING_NODE_PATTERN, "conditions/baseline"),
             BenchmarkCondition("high-noise", 0.20, MISSING_NODE_PATTERN, "conditions/high-noise"),
             BenchmarkCondition("node0-missing", NOISE_STD, (0,), "conditions/node0-missing"),
+            BenchmarkCondition(
+                "frequency-offset",
+                NOISE_STD,
+                MISSING_NODE_PATTERN,
+                "conditions/frequency-offset",
+                frequency_offset_hz=180.0,
+            ),
+            BenchmarkCondition(
+                "timing-offset",
+                NOISE_STD,
+                MISSING_NODE_PATTERN,
+                "conditions/timing-offset",
+                timing_offset_samples=32,
+            ),
+            BenchmarkCondition(
+                "low-gain",
+                NOISE_STD,
+                MISSING_NODE_PATTERN,
+                "conditions/low-gain",
+                signal_gain=0.5,
+            ),
         ),
     ),
 }
@@ -80,6 +104,9 @@ def _condition_manifest(condition: BenchmarkCondition) -> dict[str, object]:
         "name": condition.name,
         "noise_std": condition.noise_std,
         "missing_node_pattern": list(condition.missing_node_pattern),
+        "frequency_offset_hz": condition.frequency_offset_hz,
+        "timing_offset_samples": condition.timing_offset_samples,
+        "signal_gain": condition.signal_gain,
     }
 
 
@@ -306,6 +333,9 @@ def run_benchmark(
                 train_samples_per_class=selected_profile.train_samples_per_class,
                 test_noise_std=condition.noise_std,
                 test_missing_node_pattern=condition.missing_node_pattern,
+                test_frequency_offset_hz=condition.frequency_offset_hz,
+                test_timing_offset_samples=condition.timing_offset_samples,
+                test_signal_gain=condition.signal_gain,
             )
             condition_metrics.append(
                 {
