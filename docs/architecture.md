@@ -54,6 +54,7 @@ flowchart LR
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
+| src/benchmark.py | Run named synthetic profiles and write path-safe manifest/report records | `benchmark-manifest-v1`, `benchmark-report-v1`, synthetic-only metrics |
 | archived_baselines/ | Historical nearest-centroid and raw-IQ CNN implementations | retained for historical comparison |
 | wairc_rf/ | Stable public transform, label, RF sample, and synthetic/competition dataset-adapter imports plus an experimental SigMF metadata/recording adapter | `stft-v1` behavior, label helpers, dataset sample contracts, and explicit SigMF subset |
 
@@ -97,6 +98,10 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   dataset still consumes its existing row/dataframe interface.
 - There is no unified experiment configuration file; the CLI currently
   dispatches to the existing script arguments.
+- The `cpu-smoke` synthetic benchmark records its fixed generator, transform,
+  training, and evaluation inputs in `benchmark-manifest-v1`, then writes a
+  path-safe `benchmark-report-v1` with a deterministic signature. It remains a
+  functional check and does not represent real-data or competition accuracy.
 - Training outputs now include a sanitized `run-manifest-v1` record with
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and

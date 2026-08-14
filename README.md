@@ -48,6 +48,8 @@ ensemble inference -> 9-value submission
   and missing nodes.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
+- Reproducible `wairc benchmark run --profile cpu-smoke` with path-safe
+  manifest/report files for synthetic functional checks.
 - Archived early baselines under archived_baselines.
 
 The current public repository is intentionally still a competition-oriented
@@ -97,6 +99,16 @@ The reported synthetic exact-match accuracy is only a functional check of the
 workflow. It is not a competition score or evidence of performance on real RF
 data, and it may vary if the seed or dependency versions change.
 
+### Run the synthetic benchmark
+
+    wairc benchmark run --profile cpu-smoke
+
+This writes `benchmark-manifest.json` and `benchmark-report.json` under
+`outputs/benchmark/`. The report includes a deterministic signature over the
+fixed synthetic inputs and metrics; runtime is recorded separately. See the
+[synthetic benchmark guide](docs/benchmark.md) for the report schema and its
+synthetic-only boundary.
+
 List the unified commands with:
 
     wairc --help
@@ -143,6 +155,7 @@ contract, complex/interleaved input requirements, and exact-equivalence rule.
     python -m pytest
     python scripts/smoke_test.py
     wairc demo
+    wairc benchmark run --profile cpu-smoke
 
 The tests and smoke test use synthetic inputs and do not require the
 competition dataset, checkpoints, CUDA, or external credentials. A local
@@ -203,7 +216,9 @@ original terms.
     scripts/smoke_test.py
     src/cli.py
     src/synthetic_demo.py
+    src/benchmark.py
     docs/architecture.md
+    docs/benchmark.md
     docs/reproducibility.md
     archived_baselines/
 
@@ -217,6 +232,8 @@ original terms.
   `stft-v1` transform contract.
 - [SigMF interoperability](docs/sigmf.md): experimental metadata subset and
   explicit raw-data compatibility boundary.
+- [Synthetic benchmark](docs/benchmark.md): reproducible CPU profile and
+  machine-readable manifest/report contract.
 - [Reproducibility](docs/reproducibility.md): current limits and required records.
 - [Release checklist](docs/release-checklist.md): the v0.3.0 release record and
   future release gates.
