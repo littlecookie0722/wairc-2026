@@ -5,7 +5,7 @@ import pytest
 import torch
 
 from src.artifact_cli import main as artifact_main
-from src.artifact_inspect import inspect_artifact
+from src.artifact_inspect import inspect_artifact, validate_run_manifest
 from src.cache_artifact import write_cache_artifact
 from src.checkpoint import make_checkpoint_payload
 from src.oof_artifact import write_oof_artifact
@@ -64,6 +64,36 @@ def _write_versioned_artifacts(tmp_path):
     return {"checkpoint": checkpoint, "oof": oof, "rule": rule, "cache": cache}
 
 
+def _write_manifest(tmp_path, *, mismatch=False):
+    paths = _write_versioned_artifacts(tmp_path)
+    checkpoint_payload = torch.load(paths["checkpoint"], map_location="cpu")
+    checkpoint_payload["fold"] = 0
+    torch.save(checkpoint_payload, paths["checkpoint"])
+    manifest = {
+        "schemaVersion": "run-manifest-v1",
+        "runId": "demo-run",
+        "status": "completed",
+        "model": {"numClasses": 9},
+        "transform": {"version": "stft-v1", "nFft": 8, "hop": 2, "targetFreq": 5, "targetTime": 4, "cacheTime": 7},
+        "training": {"folds": [0]},
+        "outputs": {
+            "checkpoint": "model.pth",
+            "oof": ["oof.npz"],
+            "rule": "rule.json",
+            "config": "config.json",
+            "history": "history.json",
+        },
+    }
+    rule_payload = json.loads(paths["rule"].read_text(encoding="utf-8"))
+    rule_payload["source_files"] = ["missing.npz" if mismatch else "oof.npz"]
+    paths["rule"].write_text(json.dumps(rule_payload), encoding="utf-8")
+    (tmp_path / "config.json").write_text("{}", encoding="utf-8")
+    (tmp_path / "history.json").write_text("[]", encoding="utf-8")
+    manifest_path = tmp_path / "run-manifest.json"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    return manifest_path
+
+
 @pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache"])
 def test_inspect_artifact_summarizes_versioned_artifacts_without_absolute_paths(tmp_path, kind):
     path = _write_versioned_artifacts(tmp_path)[kind]
@@ -104,6 +134,49 @@ def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
     assert result["schemaVersion"] == "legacy-unversioned"
 
 
+def test_validate_run_manifest_checks_linked_artifacts_without_paths(tmp_path):
+    path = _write_manifest(tmp_path)
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is True
+    assert result["artifactType"] == "run-manifest"
+    assert result["details"]["outputCount"] == 5
+    assert str(tmp_path) not in json.dumps(result)
+
+
+def test_validate_run_manifest_accepts_kfold_fold_metadata(tmp_path):
+    path = _write_manifest(tmp_path)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["outputs"]["folds"] = [0]
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is True
+
+
+def test_validate_run_manifest_rejects_mismatched_rule_sources(tmp_path):
+    path = _write_manifest(tmp_path, mismatch=True)
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "rule source_files do not match manifest oof outputs" in result["errors"]
+
+
+def test_validate_run_manifest_rejects_unsafe_output_reference(tmp_path):
+    path = _write_manifest(tmp_path)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["outputs"]["checkpoint"] = str(tmp_path / "model.pth")
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "checkpoint references an unsafe path" in result["errors"]
+
+
 def test_artifact_cli_json_reports_invalid_artifact_and_returns_nonzero(tmp_path, capsys):
     path = tmp_path / "invalid.pth"
     torch.save({"schemaVersion": "checkpoint-v1", "arch": "resnet18"}, path)
@@ -126,3 +199,13 @@ def test_artifact_cli_inspect_json_reports_valid_artifact(tmp_path, capsys):
     output = json.loads(capsys.readouterr().out)
     assert output["valid"] is True
     assert output["artifactType"] == "inference-rule"
+
+
+def test_artifact_cli_validate_run_json_reports_linkage(tmp_path, capsys):
+    path = _write_manifest(tmp_path)
+
+    artifact_main(["validate-run", str(path), "--json"])
+
+    output = json.loads(capsys.readouterr().out)
+    assert output["valid"] is True
+    assert output["artifactType"] == "run-manifest"

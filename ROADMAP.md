@@ -33,9 +33,9 @@ was released on 2026-08-12 with the following foundations:
 
 ## Next: interoperability and stable interfaces
 
-- Extend the artifact inspection and compatibility CLI with cross-artifact
-  linkage checks while keeping local paths and restricted data out of public
-  artifacts.
+- [x] Extend the artifact inspection and compatibility CLI with read-only
+  cross-artifact linkage checks while keeping local paths and restricted data
+  out of public artifacts.
 - Link related artifacts more explicitly in documented run metadata while
   keeping local paths and restricted data out of public artifacts.
 - Expand the initial stable transform and label API while preserving the

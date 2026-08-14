@@ -27,7 +27,7 @@ def format_help() -> str:
             "  predict        Predict with one spectrogram model",
             "  predict-kfold  Predict with a k-fold ensemble",
             "  validate       Validate a submission text file",
-            "  artifact       Inspect or validate a versioned artifact",
+            "  artifact       Inspect artifacts or validate a run manifest",
         ]
     )
     return (

@@ -12,6 +12,8 @@ Future changes will be listed here before the next release.
 - `wairc artifact inspect` and `wairc artifact validate` commands with JSON
   summaries, legacy compatibility reporting, and non-zero failure status for
   invalid checkpoint, OOF, inference-rule, and STFT cache artifacts.
+- `wairc artifact validate-run` for read-only manifest output, artifact type,
+  class/STFT/fold, and rule-to-OOF linkage checks with path-safe summaries.
 
 ## [0.2.0] - 2026-08-13
 

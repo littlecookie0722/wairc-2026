@@ -88,6 +88,19 @@ path-redacted summary, and exits non-zero when validation fails. Legacy
 unversioned checkpoints, OOF files, rules, and shape-compatible caches are
 reported as `legacy-unversioned`; the command does not upgrade or mutate them.
 
+For a completed training output directory, validate the run manifest and its
+linked artifacts together:
+
+    wairc artifact validate-run outputs/models/run-manifest.json --json
+
+This read-only check resolves only manifest-declared filenames inside the
+manifest directory. It checks that declared outputs exist, linked checkpoint,
+OOF, and rule files use the expected artifact types, and that public class,
+STFT, fold, and rule `source_files` metadata agree. Config, history, summary,
+and other auxiliary outputs are existence-checked without being interpreted.
+Absolute paths and parent-directory traversal are rejected, and the JSON
+summary contains filenames only.
+
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
 fails before model construction when these fields are missing or incompatible.

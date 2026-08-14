@@ -13,9 +13,12 @@ from .cache_artifact import CACHE_ARTIFACT_TYPE, CACHE_SCHEMA, LEGACY_CACHE_SCHE
 from .checkpoint import load_checkpoint
 from .oof_artifact import load_oof_artifact
 from .rule_artifact import LEGACY_RULE_SCHEMA, RULE_ARTIFACT_TYPE, RULE_SCHEMA, load_rule_artifact
+from .run_manifest import RUN_MANIFEST_SCHEMA
 
 
 CHECKPOINT_SUFFIXES = {".ckpt", ".pt", ".pth"}
+MANIFEST_NAMES = {"run-manifest.json"}
+LINKED_OUTPUT_ROLES = {"checkpoint", "checkpoints", "oof", "rule"}
 
 
 def inspect_artifact(path: Path) -> dict[str, Any]:
@@ -36,7 +39,9 @@ def inspect_artifact(path: Path) -> dict[str, Any]:
 
     try:
         kind = _detect_kind(path)
-        if kind == "checkpoint":
+        if kind == "manifest":
+            result.update(_inspect_manifest(path))
+        elif kind == "checkpoint":
             result.update(_inspect_checkpoint(path))
         elif kind == "oof":
             result.update(_inspect_oof(path))
@@ -53,6 +58,8 @@ def inspect_artifact(path: Path) -> dict[str, Any]:
 
 def _detect_kind(path: Path) -> str:
     suffix = path.suffix.lower()
+    if path.name in MANIFEST_NAMES or path.name.startswith("run-manifest_"):
+        return "manifest"
     if suffix in CHECKPOINT_SUFFIXES:
         return "checkpoint"
     if suffix == ".json":
@@ -70,6 +77,221 @@ def _detect_kind(path: Path) -> str:
     if {"x", "node_mask"}.issubset(keys):
         return "cache"
     return "unknown"
+
+
+def validate_run_manifest(path: Path) -> dict[str, Any]:
+    """Validate a run manifest and the public artifacts it links to."""
+    path = Path(path)
+    result: dict[str, Any] = {
+        "valid": False,
+        "artifactType": "run-manifest",
+        "schemaVersion": None,
+        "fileName": path.name,
+    }
+    if not path.exists():
+        result["error"] = "File does not exist"
+        return result
+    if not path.is_file():
+        result["error"] = "Manifest path is not a file"
+        return result
+    try:
+        result.update(_inspect_manifest(path))
+    except Exception as error:
+        result["error"] = _safe_error(error, path)
+    return result
+
+
+def _inspect_manifest(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("Run manifest must be a JSON object")
+    if payload.get("schemaVersion") != RUN_MANIFEST_SCHEMA:
+        raise ValueError("Run manifest must use run-manifest-v1 metadata")
+    run_id = payload.get("runId")
+    if not isinstance(run_id, str) or not run_id:
+        raise ValueError("Run manifest is missing runId")
+    outputs = payload.get("outputs", {})
+    if not isinstance(outputs, dict):
+        raise ValueError("Run manifest outputs must be an object")
+    output_paths, output_errors = _manifest_output_paths(outputs)
+    loaded: dict[str, list[tuple[Path, dict[str, Any]]]] = {}
+    errors: list[str] = list(output_errors)
+    auxiliary_outputs: dict[str, list[str]] = {}
+    for role, names in output_paths.items():
+        for name in names:
+            artifact_path = _resolve_manifest_output(path, name)
+            if artifact_path is None:
+                errors.append(f"{role} references an unsafe path")
+                continue
+            if not artifact_path.exists():
+                errors.append(f"Missing {role} artifact {artifact_path.name}")
+                continue
+            if role not in LINKED_OUTPUT_ROLES:
+                auxiliary_outputs.setdefault(role, []).append(artifact_path.name)
+                continue
+            summary = inspect_artifact(artifact_path)
+            if not summary["valid"]:
+                errors.append(f"Invalid {role} artifact {artifact_path.name}")
+                continue
+            expected_type = _expected_artifact_type(role)
+            if summary.get("artifactType") != expected_type:
+                errors.append(f"Unexpected {role} artifact type for {artifact_path.name}")
+                continue
+            loaded.setdefault(role, []).append((artifact_path, summary))
+
+    _validate_manifest_linkage(payload, output_paths, loaded, errors)
+    details = {
+        "runId": run_id,
+        "status": payload.get("status"),
+        "outputCount": sum(len(names) for names in output_paths.values()),
+        "validatedArtifactCount": sum(len(entries) for entries in loaded.values()),
+        "outputs": {role: [path.name for path, _ in entries] for role, entries in loaded.items()},
+        "auxiliaryOutputs": auxiliary_outputs,
+        "errorCount": len(errors),
+    }
+    if errors:
+        return {
+            "valid": False,
+            "artifactType": "run-manifest",
+            "schemaVersion": RUN_MANIFEST_SCHEMA,
+            "details": details,
+            "errors": errors,
+        }
+    return _valid_summary(
+        artifact_type="run-manifest",
+        schema=RUN_MANIFEST_SCHEMA,
+        details=details,
+    )
+
+
+def _manifest_output_paths(outputs: dict[str, Any]) -> tuple[dict[str, list[str]], list[str]]:
+    output_paths: dict[str, list[str]] = {}
+    errors: list[str] = []
+    for role, value in outputs.items():
+        if role == "folds" and isinstance(value, list) and all(
+            isinstance(item, int) and not isinstance(item, bool) for item in value
+        ):
+            continue
+        if isinstance(value, str):
+            output_paths[role] = [value]
+        elif isinstance(value, list) and all(isinstance(item, str) for item in value):
+            output_paths[role] = list(value)
+        else:
+            errors.append(f"{role} outputs must be a string or list of strings")
+    return output_paths, errors
+
+
+def _expected_artifact_type(role: str) -> str:
+    if role in {"checkpoint", "checkpoints"}:
+        return "model-checkpoint"
+    if role == "oof":
+        return "oof-predictions"
+    if role == "rule":
+        return RULE_ARTIFACT_TYPE
+    raise ValueError(f"Unsupported linked output role {role}")
+
+
+def _resolve_manifest_output(manifest_path: Path, name: str) -> Path | None:
+    candidate = Path(name)
+    if candidate.is_absolute() or candidate.name != name or name in {".", ".."}:
+        return None
+    resolved = (manifest_path.parent / candidate).resolve()
+    try:
+        resolved.relative_to(manifest_path.parent.resolve())
+    except ValueError:
+        return None
+    return resolved
+
+
+def _validate_manifest_linkage(
+    payload: dict[str, Any],
+    output_paths: dict[str, list[str]],
+    loaded: dict[str, list[tuple[Path, dict[str, Any]]]],
+    errors: list[str],
+) -> None:
+    expected_classes = _manifest_num_classes(payload)
+    expected_transform = _manifest_transform(payload)
+    for role in ("checkpoint", "checkpoints"):
+        for _, summary in loaded.get(role, []):
+            details = summary.get("details", {})
+            if expected_classes is not None and details.get("numClasses") not in {None, expected_classes}:
+                errors.append(f"{role} class count does not match manifest")
+            _compare_transform(details.get("transform", {}), expected_transform, role, errors)
+
+    for _, summary in loaded.get("oof", []):
+        details = summary.get("details", {})
+        if expected_classes is not None and details.get("classes") != expected_classes:
+            errors.append("oof class count does not match manifest")
+
+    for _, summary in loaded.get("rule", []):
+        details = summary.get("details", {})
+        if expected_classes is not None and details.get("numClasses") not in {None, expected_classes}:
+            errors.append("rule class count does not match manifest")
+
+    if output_paths.get("rule") and output_paths.get("oof"):
+        for rule_path, _ in loaded.get("rule", []):
+            try:
+                payload_data = json.loads(rule_path.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError):
+                continue
+            sources = payload_data.get("source_files")
+            if isinstance(sources, list):
+                expected_oof = {Path(name).name for name in output_paths["oof"]}
+                actual_oof = {Path(str(name)).name for name in sources}
+                if actual_oof != expected_oof:
+                    errors.append("rule source_files do not match manifest oof outputs")
+
+    manifest_folds = _manifest_folds(payload)
+    if manifest_folds is not None:
+        artifact_folds = {
+            int(summary["details"]["fold"])
+            for role in ("oof", "checkpoint", "checkpoints")
+            for _, summary in loaded.get(role, [])
+            if summary.get("details", {}).get("fold") is not None
+        }
+        if artifact_folds and artifact_folds != manifest_folds:
+            errors.append("artifact folds do not match manifest")
+
+
+def _manifest_num_classes(payload: dict[str, Any]) -> int | None:
+    model = payload.get("model")
+    if not isinstance(model, dict):
+        return None
+    value = model.get("numClasses")
+    return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _manifest_transform(payload: dict[str, Any]) -> dict[str, int | str]:
+    transform = payload.get("transform")
+    if not isinstance(transform, dict):
+        return {}
+    aliases = {"nFft": "n_fft", "targetFreq": "target_freq", "targetTime": "target_time", "cacheTime": "cache_time"}
+    expected: dict[str, int | str] = {}
+    for source, target in aliases.items():
+        value = transform.get(source)
+        if isinstance(value, int) and not isinstance(value, bool):
+            expected[target] = value
+    if isinstance(transform.get("hop"), int) and not isinstance(transform["hop"], bool):
+        expected["hop"] = transform["hop"]
+    if isinstance(transform.get("version"), str):
+        expected["stftProfile"] = transform["version"]
+    return expected
+
+
+def _compare_transform(details: dict[str, Any], expected: dict[str, int | str], role: str, errors: list[str]) -> None:
+    for key, value in expected.items():
+        if details.get(key) not in {None, value}:
+            errors.append(f"{role} {key} does not match manifest")
+
+
+def _manifest_folds(payload: dict[str, Any]) -> set[int] | None:
+    training = payload.get("training")
+    if not isinstance(training, dict):
+        return None
+    folds = training.get("folds")
+    if not isinstance(folds, list) or not all(isinstance(value, int) and not isinstance(value, bool) for value in folds):
+        return None
+    return set(folds)
 
 
 def _inspect_checkpoint(path: Path) -> dict[str, Any]:
