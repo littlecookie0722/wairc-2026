@@ -125,7 +125,7 @@ was released on 2026-08-14 with the following verified capabilities:
 ## Released: v0.10.0 executable benchmark fixture verification
 
 - [v0.10.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.10.0)
-  is prepared for publication on 2026-08-14 with the following verified
+  was released on 2026-08-14 with the following verified
   capability:
 - `wairc benchmark verify-fixture` replays either repository-authored
   `benchmark-fixture-v1` manifest and verifies the generated manifest fields,

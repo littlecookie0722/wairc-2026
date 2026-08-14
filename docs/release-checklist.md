@@ -15,38 +15,44 @@ real-data performance.
 
 ## v0.10.0 verification
 
-- [ ] `python -m pytest` passes locally with 161 tests.
-- [ ] `python scripts/smoke_test.py` passes locally.
-- [ ] `python scripts/cpu_compatibility.py` passes locally, including the
+- [x] `python -m pytest` passes locally with 161 tests.
+- [x] `python scripts/smoke_test.py` passes locally.
+- [x] `python scripts/cpu_compatibility.py` passes locally, including the
   eager/TorchScript CPU comparison.
-- [ ] `ruff check src wairc_rf tests scripts` passes locally.
-- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
-- [ ] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
+- [x] `ruff check src wairc_rf tests scripts` passes locally.
+- [x] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [x] `wairc --version`, `wairc --help`, both synthetic benchmark profiles,
   both `verify-fixture` commands, the summary command, and the synthetic demo
   pass locally.
-- [ ] Source and wheel distributions build successfully, include the v0.10.0
+- [x] Source and wheel distributions build successfully, include the v0.10.0
   release documentation, and include both benchmark fixtures in the source
   distribution.
-- [ ] The wheel installs in an isolated environment with runtime dependencies;
+- [x] The wheel installs in an isolated environment with runtime dependencies;
   `pip check`, `wairc --version`, the demo, summary command, both fixture
   verification commands, and CPU compatibility probe pass there. Both
   benchmark profiles pass in the release matrix.
-- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
   commit and tag, including both fixture verification, package, source
   documentation, and isolated-wheel checks on Python 3.12.
-- [ ] Release contents are inspected for data, model weights, caches, secrets,
+- [x] Release contents are inspected for data, model weights, caches, secrets,
   and private paths.
 
 ## v0.10.0 release metadata
 
-- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.10.0`.
-- [ ] `CHANGELOG.md`, migration boundaries, and
+- [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.10.0`.
+- [x] `CHANGELOG.md`, migration boundaries, and
   `docs/releases/v0.10.0.md` are prepared.
-- [ ] README and `ROADMAP.md` release text and links are prepared for
+- [x] README and `ROADMAP.md` release text and links are prepared for
   `v0.10.0` publication.
-- [ ] Annotated tag `v0.10.0` points to the verified release commit.
-- [ ] GitHub release `v0.10.0` is published with verified notes, wheel/sdist
-  assets, and no private assets.
+- [x] Annotated tag `v0.10.0` points to the verified release commit
+  `31d8acd2f57023f514648f61cb4c4bcb99093b19`; tag CI run `31781923226`
+  completed successfully.
+- [x] GitHub release [`v0.10.0`](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.10.0)
+  is published with verified notes, wheel/sdist assets, and no private assets.
+  The wheel SHA-256 is
+  `04b6fe04bd17030cea08f93b87bca5304b49c0fb67dbfddcb4565f1bd5de7694`; the
+  sdist SHA-256 is
+  `3791638cb7a0e43446e37d7fc89eee3495fcd99083345cf8222f0e97251f7107`.
 
 ## v0.9.0 verification
 
