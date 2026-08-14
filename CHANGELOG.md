@@ -5,6 +5,10 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+Future unreleased changes will be listed here before the next release.
+
+## [0.7.0] - 2026-08-14
+
 ### Added
 
 - `robustness-small` now includes a deterministic `combined-stress` condition
@@ -14,6 +18,14 @@ verified repository changes; they do not imply a release has been published.
 - The data-free CPU compatibility probe now executes the no-weights model
   through TorchScript and compares its finite logits with the eager CPU path;
   the competition training and inference entry points are unchanged.
+
+### Compatibility
+
+- `robustness-small` keeps the existing `cpu-smoke` profile and the six prior
+  condition names and parameters; `combined-stress` is an additive synthetic
+  condition.
+- The probe-only TorchScript check does not change the competition training or
+  inference entry points, checkpoint fields, or serialized submissions.
 
 ## [0.6.0] - 2026-08-14
 
