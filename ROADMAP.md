@@ -132,17 +132,22 @@ was released on 2026-08-14 with the following verified capabilities:
   report schema, and deterministic signature without requiring competition data
   or trained checkpoints.
 
-## Unreleased: explicit complete-node robustness baseline
+## Released: v0.11.0 complete-node robustness baseline
 
+- [v0.11.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.11.0)
+  is prepared for publication on 2026-08-14 with the following verified
+  capability:
 - `robustness-small` adds an `all-nodes-present` condition that isolates the
   complete three-receiver state from the periodic missing-node baseline. The
   condition uses the existing synthetic missing-node semantics and does not
   change the competition workflow.
+- The redistributable robustness fixture records all ten condition controls and
+  the updated deterministic signature without generated IQ, model outputs, or
+  private labels.
 
-## Later: public interoperability and benchmarks
-
-- Extend the robustness protocol with additional evidence-backed conditions or
-  redistributable fixtures without changing the competition workflow.
+Future benchmark extensions, if needed, require a separately scoped,
+evidence-backed proposal; no additional condition is currently part of this
+roadmap.
 
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
