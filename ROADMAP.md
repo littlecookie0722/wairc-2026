@@ -95,8 +95,7 @@ was released on 2026-08-14 with the following verified capabilities:
 ## Released: v0.7.0 robustness and CPU execution compatibility
 
 - [v0.7.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.7.0)
-  is prepared for publication on 2026-08-14 with the following verified
-  capabilities:
+  was released on 2026-08-14 with the following verified capabilities:
 - `robustness-small` covers seven controlled synthetic conditions, including a
   deterministic `combined-stress` interaction of noise, frequency offset,
   timing offset, and signal gain. The results remain synthetic-only checks.
