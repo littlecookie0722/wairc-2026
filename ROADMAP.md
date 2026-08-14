@@ -113,12 +113,14 @@ was released on 2026-08-14 with the following verified capabilities:
   signature without distributing generated IQ, model outputs, or private
   labels.
 
-## Unreleased: receiver-specific robustness coverage
+## Released: v0.9.0 receiver-specific robustness coverage
 
-- The current unreleased benchmark profile adds dedicated `node1-missing` and
-  `node2-missing` conditions to the existing `robustness-small` protocol.
-  Their redistributable parameter manifest and deterministic signature remain
-  synthetic-only and do not change the competition workflow.
+- [v0.9.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.9.0)
+  is prepared for publication on 2026-08-14 with the following capability:
+- The `robustness-small` profile adds dedicated `node1-missing` and
+  `node2-missing` conditions to the existing protocol. The redistributable
+  parameter manifest and deterministic signature remain synthetic-only and do
+  not change the competition workflow.
 
 ## Later: public interoperability and benchmarks
 
