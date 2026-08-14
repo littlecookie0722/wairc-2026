@@ -78,6 +78,10 @@ dataset fingerprint algorithm, or reinterpret missing nodes. Existing
 `src.data.load_index`, `resolve_iq_path`, and `DroneSpectrogramDataset` entry
 points remain supported while callers migrate deliberately.
 
+`SyntheticDatasetAdapter` stores already-generated `RFSample` values in memory
+with stable order and unique IDs. It is intended for data-free tests and future
+benchmark fixtures; it does not claim to reproduce real RF recordings.
+
 Each k-fold OOF file uses the `oof-v1` schema. It retains the historical
 `probs`, `labels`, `indices`, `fold`, `sample_ids`, and `metrics` arrays while
 adding scalar schema metadata. The rule-search reader accepts legacy

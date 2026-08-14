@@ -18,12 +18,18 @@ compatibility while implementation details are migrated incrementally.
 | `RFNode` | `(iq, sample_rate, present=True)` |
 | `RFSample` | `(sample_id, nodes, labels=None)` |
 | `RFDatasetAdapter` | sequence protocol returning `RFSample` |
+| `SyntheticDatasetAdapter` | `(samples)` |
 | `CompetitionDatasetAdapter` | `(root, has_labels=...)` |
 
 The dataset symbols provide the first public interoperability contract. The
 competition adapter reads the existing `index.csv` and three-node NPZ format
 without changing the legacy `src.data` or training entry points. It loads IQ
 files lazily and returns nodes in fixed `node0`, `node1`, `node2` order.
+
+`SyntheticDatasetAdapter` is the in-memory implementation for generated or
+fixture `RFSample` values. It keeps sample order, rejects duplicate IDs, and
+does not write data or infer a file format, so it can be used in CPU tests and
+benchmarks without competition data.
 
 ```python
 from wairc_rf import CompetitionDatasetAdapter

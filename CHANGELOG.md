@@ -13,8 +13,8 @@ Current unreleased changes are listed here before the next release.
   with exact `stft-v1` equivalence to the corresponding float32 interleaved
   representation.
 - Public `RFNode`/`RFSample` contracts, the `RFDatasetAdapter` sequence
-  protocol, and a strict lazy `CompetitionDatasetAdapter` for the existing
-  three-node CSV/NPZ schema.
+  protocol, `SyntheticDatasetAdapter`, and a strict lazy
+  `CompetitionDatasetAdapter` for the existing three-node CSV/NPZ schema.
 
 ### Compatibility
 
