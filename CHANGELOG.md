@@ -7,9 +7,23 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
+Future unreleased changes will be listed here before the next release.
+
+## [0.9.0] - 2026-08-14
+
+### Added
+
 - `robustness-small` now includes dedicated `node1-missing` and
   `node2-missing` conditions, completing receiver-specific systematic
   missing-node coverage while retaining all existing conditions.
+
+### Compatibility
+
+- The existing `cpu-smoke` profile, seven prior robustness condition names and
+  parameters, competition data path, `stft-v1`, labels, training/inference
+  entry points, checkpoint fields, and submission format remain unchanged.
+- The additional conditions and updated fixture remain synthetic-only checks;
+  they do not claim real-data robustness or competition performance.
 
 ## [0.8.0] - 2026-08-14
 
