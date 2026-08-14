@@ -1,9 +1,14 @@
 import json
 
+import pytest
+import torch
+
+from src.checkpoint import make_checkpoint_payload
 from src.run_manifest import (
     RUN_MANIFEST_SCHEMA,
     create_run_manifest,
     finalize_run_manifest,
+    finalize_run_manifest_with_artifacts,
     make_run_id,
     write_run_manifest,
 )
@@ -64,3 +69,68 @@ def test_run_manifest_can_be_finalized(tmp_path):
     assert saved["status"] == "completed"
     assert saved["outputs"] == {"checkpoint": "best_model.pth"}
     assert "finishedAt" in saved
+
+
+def test_run_manifest_can_index_linked_artifacts_without_paths(tmp_path):
+    path = tmp_path / "run-manifest.json"
+    manifest = create_run_manifest(
+        run_id="test-run",
+        command=["python", "-m", "src.train_spectrogram"],
+        args={},
+        data={},
+        transform={},
+        model={},
+        training={},
+        device="cpu",
+    )
+    write_run_manifest(path, manifest)
+    checkpoint = tmp_path / "best_model.pth"
+    torch.save(
+        make_checkpoint_payload(
+            model_state_dict={"weight": torch.ones(1)},
+            arch="resnet18",
+            dropout=0.3,
+            num_classes=9,
+            n_fft=8,
+            hop=2,
+            target_freq=5,
+            target_time=4,
+            cache_time=7,
+            epoch=1,
+            metrics={"strict": 0.5},
+            pretrained=False,
+        ),
+        checkpoint,
+    )
+
+    finalize_run_manifest_with_artifacts(path, "completed", outputs={"checkpoint": checkpoint.name})
+
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    index = saved["artifactIndex"]
+    assert index["schemaVersion"] == "artifact-index-v1"
+    assert index["runId"] == "test-run"
+    assert index["artifacts"][0]["fileName"] == checkpoint.name
+    assert len(index["artifacts"][0]["sha256"]) == 64
+    assert str(tmp_path) not in json.dumps(index)
+
+
+def test_artifact_index_finalizer_requires_completed_status(tmp_path):
+    path = tmp_path / "run-manifest.json"
+    manifest = create_run_manifest(
+        run_id="test-run",
+        command=["python", "-m", "src.train_spectrogram"],
+        args={},
+        data={},
+        transform={},
+        model={},
+        training={},
+        device="cpu",
+    )
+    write_run_manifest(path, manifest)
+
+    with pytest.raises(ValueError, match="requires status 'completed'"):
+        finalize_run_manifest_with_artifacts(path, "failed", outputs={})
+
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["status"] == "running"
+    assert "artifactIndex" not in saved

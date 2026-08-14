@@ -19,7 +19,13 @@ from tqdm.auto import tqdm
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
-from .run_manifest import create_run_manifest, finalize_run_manifest, make_run_id, write_run_manifest
+from .run_manifest import (
+    create_run_manifest,
+    finalize_run_manifest,
+    finalize_run_manifest_with_artifacts,
+    make_run_id,
+    write_run_manifest,
+)
 from .rule_artifact import make_rule_payload, write_rule_artifact
 from .spectrogram import (
     DroneClassifier,
@@ -360,7 +366,7 @@ def main() -> None:
             f"Best inference rule: {selected_rule['method']} "
             f"accuracy={float(selected_rule['accuracy']):.5f} saved to {args.save_dir / 'best_rule.json'}"
         )
-        finalize_run_manifest(
+        finalize_run_manifest_with_artifacts(
             manifest_path,
             "completed",
             outputs={

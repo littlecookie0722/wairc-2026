@@ -140,11 +140,14 @@ def _inspect_manifest(path: Path) -> dict[str, Any]:
             loaded.setdefault(role, []).append((artifact_path, summary))
 
     _validate_manifest_linkage(payload, output_paths, loaded, errors)
+    indexed_count = _validate_artifact_index(payload, path, output_paths, loaded, errors)
     details = {
         "runId": run_id,
         "status": payload.get("status"),
         "outputCount": sum(len(names) for names in output_paths.values()),
         "validatedArtifactCount": sum(len(entries) for entries in loaded.values()),
+        "artifactIndexPresent": "artifactIndex" in payload,
+        "indexedArtifactCount": indexed_count,
         "outputs": {role: [path.name for path, _ in entries] for role, entries in loaded.items()},
         "auxiliaryOutputs": auxiliary_outputs,
         "errorCount": len(errors),
@@ -292,6 +295,105 @@ def _manifest_folds(payload: dict[str, Any]) -> set[int] | None:
     if not isinstance(folds, list) or not all(isinstance(value, int) and not isinstance(value, bool) for value in folds):
         return None
     return set(folds)
+
+
+def _validate_artifact_index(
+    payload: dict[str, Any],
+    manifest_path: Path,
+    output_paths: dict[str, list[str]],
+    loaded: dict[str, list[tuple[Path, dict[str, Any]]]],
+    errors: list[str],
+) -> int:
+    from .artifact_index import ARTIFACT_INDEX_ALGORITHM, ARTIFACT_INDEX_SCHEMA, INDEXED_OUTPUT_ROLES, file_sha256
+
+    index = payload.get("artifactIndex")
+    if index is None:
+        return 0
+    if not isinstance(index, dict):
+        errors.append("artifactIndex must be an object")
+        return 0
+    if index.get("schemaVersion") != ARTIFACT_INDEX_SCHEMA:
+        errors.append("artifactIndex must use artifact-index-v1 metadata")
+    if index.get("runId") != payload.get("runId"):
+        errors.append("artifactIndex runId does not match manifest")
+    if index.get("algorithm") != ARTIFACT_INDEX_ALGORITHM:
+        errors.append("artifactIndex algorithm must be sha256")
+    entries = index.get("artifacts")
+    if not isinstance(entries, list):
+        errors.append("artifactIndex artifacts must be a list")
+        return 0
+
+    expected = {
+        (role, name)
+        for role, names in output_paths.items()
+        if role in INDEXED_OUTPUT_ROLES
+        for name in names
+    }
+    loaded_by_key = {
+        (role, path.name): (path, summary)
+        for role, artifacts in loaded.items()
+        for path, summary in artifacts
+    }
+    seen: set[tuple[str, str]] = set()
+    for entry in entries:
+        if not isinstance(entry, dict):
+            errors.append("artifactIndex entries must be objects")
+            continue
+        role = entry.get("role")
+        file_name = entry.get("fileName")
+        if not isinstance(role, str) or role not in INDEXED_OUTPUT_ROLES:
+            errors.append("artifactIndex entry has an unsupported role")
+            continue
+        if not isinstance(file_name, str) or _resolve_manifest_output(manifest_path, file_name) is None:
+            errors.append("artifactIndex entry has an unsafe filename")
+            continue
+        key = (role, file_name)
+        if key in seen:
+            errors.append(f"artifactIndex contains duplicate entry {file_name}")
+            continue
+        seen.add(key)
+        loaded_entry = loaded_by_key.get(key)
+        if loaded_entry is None:
+            continue
+        path, summary = loaded_entry
+        if entry.get("artifactType") != summary.get("artifactType"):
+            errors.append(f"artifactIndex artifact type mismatch for {file_name}")
+        if entry.get("schemaVersion") != summary.get("schemaVersion"):
+            errors.append(f"artifactIndex schema mismatch for {file_name}")
+        size_bytes = entry.get("sizeBytes")
+        if isinstance(size_bytes, bool) or not isinstance(size_bytes, int) or size_bytes != path.stat().st_size:
+            errors.append(f"artifactIndex size mismatch for {file_name}")
+        digest = entry.get("sha256")
+        if not isinstance(digest, str) or re.fullmatch(r"[0-9a-f]{64}", digest) is None:
+            errors.append(f"artifactIndex digest is invalid for {file_name}")
+        elif digest != file_sha256(path):
+            errors.append(f"artifactIndex digest mismatch for {file_name}")
+        details = summary.get("details", {})
+        expected_fold = details.get("fold")
+        indexed_fold = entry.get("fold")
+        if expected_fold is None:
+            fold_matches = "fold" not in entry
+        else:
+            fold_matches = (
+                isinstance(indexed_fold, int)
+                and not isinstance(indexed_fold, bool)
+                and indexed_fold == expected_fold
+            )
+        if not fold_matches:
+            errors.append(f"artifactIndex fold mismatch for {file_name}")
+
+        expected_tag = details.get("tag")
+        indexed_tag = entry.get("tag")
+        if expected_tag is None:
+            tag_matches = "tag" not in entry
+        else:
+            tag_matches = isinstance(indexed_tag, str) and indexed_tag == expected_tag
+        if not tag_matches:
+            errors.append(f"artifactIndex tag mismatch for {file_name}")
+
+    if seen != expected:
+        errors.append("artifactIndex entries do not match manifest artifact outputs")
+    return len(seen)
 
 
 def _inspect_checkpoint(path: Path) -> dict[str, Any]:

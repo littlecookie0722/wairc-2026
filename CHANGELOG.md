@@ -14,6 +14,15 @@ Future changes will be listed here before the next release.
   invalid checkpoint, OOF, inference-rule, and STFT cache artifacts.
 - `wairc artifact validate-run` for read-only manifest output, artifact type,
   class/STFT/fold, and rule-to-OOF linkage checks with path-safe summaries.
+- Optional `artifact-index-v1` metadata for newly completed training runs,
+  recording path-free SHA-256, size, type, schema, fold, and tag references for
+  declared checkpoint, OOF, and rule artifacts.
+
+### Compatibility
+
+- Existing `run-manifest-v1` files without an artifact index remain valid, and
+  training, STFT, label, fold, inference, ensemble, checkpoint-consumer, and
+  submission behavior are unchanged.
 
 ## [0.2.0] - 2026-08-13
 

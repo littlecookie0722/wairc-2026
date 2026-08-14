@@ -40,6 +40,7 @@ flowchart LR
 | src/train_spectrogram.py | Single-model training, validation metrics, checkpoint/rule outputs, and run manifest | CLI arguments and checkpoint fields |
 | src/train_spectrogram_kfold.py | Stratified/K-fold training, per-fold checkpoints/OOF files, and run manifest | fold indices, OOF fields, tag naming |
 | src/run_manifest.py | Sanitized `run-manifest-v1` provenance records for training runs | manifest schema and privacy boundary |
+| src/artifact_index.py | Content-addressed references for manifest-declared training artifacts | `artifact-index-v1` schema, output coverage, and path privacy |
 | src/checkpoint.py | Versioned model checkpoint metadata and legacy-compatible loading | `checkpoint-v1` fields and loader validation |
 | src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
 | src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
@@ -97,9 +98,11 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and
   per-fold `oof-v1` artifacts, `rule-v1` inference rules, and `cache-v1` STFT
-  caches. The artifact CLI can validate manifest-declared checkpoint, OOF, and
-  rule linkage without interpreting auxiliary config/history files. Aggregated
-  probability schemas and richer metadata production remain follow-up work.
+  caches. Newly completed manifests optionally embed `artifact-index-v1`
+  references for declared checkpoints, OOF files, and rules. The artifact CLI
+  validates their linkage, metadata, size, and digest without interpreting
+  auxiliary config/history files. Aggregated probability schemas and richer
+  metadata production remain follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT

@@ -157,3 +157,21 @@ def finalize_run_manifest(path: Path, status: str, **updates: Any) -> None:
     manifest["finishedAt"] = _utc_now()
     manifest.update(updates)
     write_run_manifest(path, manifest)
+
+
+def finalize_run_manifest_with_artifacts(
+    path: Path,
+    status: str,
+    *,
+    outputs: dict[str, Any],
+    **updates: Any,
+) -> None:
+    """Finalize a manifest and add optional content-addressed artifact references."""
+    if status != "completed":
+        raise ValueError("Artifact indexing requires status 'completed'")
+
+    from .artifact_index import build_artifact_index
+
+    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    artifact_index = build_artifact_index(manifest.get("runId"), Path(path).parent, outputs)
+    finalize_run_manifest(path, status, outputs=outputs, artifactIndex=artifact_index, **updates)

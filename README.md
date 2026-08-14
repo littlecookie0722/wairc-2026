@@ -41,6 +41,8 @@ ensemble inference -> 9-value submission
 - `wairc artifact inspect` and `wairc artifact validate` commands for
   machine-readable artifact summaries and compatibility checks.
 - `wairc artifact validate-run` for read-only run-manifest linkage checks.
+- Optional `artifact-index-v1` references in newly completed training manifests,
+  with path-free SHA-256, size, schema, fold, and tag metadata.
 - Installable `wairc` command-line interface.
 - Synthetic CPU end-to-end demonstration that requires no competition data.
 - Archived early baselines under archived_baselines.
@@ -105,8 +107,10 @@ its local path in the summary:
 
 The `validate-run` command checks manifest-declared relative outputs, validates
 linked checkpoint/OOF/rule artifacts, and compares their public class, STFT,
-fold, and OOF-source metadata. Auxiliary files such as configs and histories
-are checked for existence but are not interpreted as model artifacts.
+fold, and OOF-source metadata. When an `artifact-index-v1` block is present, it
+also verifies exact artifact coverage, type, schema, fold/tag metadata, byte
+size, and SHA-256 digest. Auxiliary files such as configs and histories are
+checked for existence but are not interpreted as model artifacts.
 
 Reusable transforms and label helpers are available from the stable Python
 namespace:

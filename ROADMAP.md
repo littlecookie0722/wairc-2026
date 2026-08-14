@@ -36,8 +36,9 @@ was released on 2026-08-12 with the following foundations:
 - [x] Extend the artifact inspection and compatibility CLI with read-only
   cross-artifact linkage checks while keeping local paths and restricted data
   out of public artifacts.
-- Link related artifacts more explicitly in documented run metadata while
-  keeping local paths and restricted data out of public artifacts.
+- [x] Link completed training artifacts through optional content-addressed run
+  metadata while keeping local paths and restricted data out of public
+  artifacts.
 - Expand the initial stable transform and label API while preserving the
   existing `src.*` module entry points during migration.
 - Define a generic public dataset adapter while preserving the competition

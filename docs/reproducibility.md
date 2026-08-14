@@ -46,6 +46,13 @@ parameters, the sanitized command arguments, and output filenames. It is
 finalized as `completed` or `failed` so an interrupted run is distinguishable
 from a finished run.
 
+On successful completion, current training entry points also add an optional
+`artifact-index-v1` block. It covers only manifest-declared checkpoints, OOF
+files, and inference rules, recording each filename, artifact type, schema,
+byte size, SHA-256 digest, and fold/tag metadata when present. It does not
+record absolute paths. Existing `run-manifest-v1` files without this optional
+block remain valid.
+
 After the training index is loaded, each training manifest also records a
 `dataset-fingerprint-v1` summary. It uses SHA-256 over normalized index
 metadata and the content of each referenced IQ file. The summary records only
@@ -96,10 +103,12 @@ linked artifacts together:
 This read-only check resolves only manifest-declared filenames inside the
 manifest directory. It checks that declared outputs exist, linked checkpoint,
 OOF, and rule files use the expected artifact types, and that public class,
-STFT, fold, and rule `source_files` metadata agree. Config, history, summary,
-and other auxiliary outputs are existence-checked without being interpreted.
-Absolute paths and parent-directory traversal are rejected, and the JSON
-summary contains filenames only.
+STFT, fold, and rule `source_files` metadata agree. When an artifact index is
+present, it additionally requires exact declared-artifact coverage and checks
+the recorded type, schema, fold/tag metadata, byte size, and SHA-256 digest.
+Config, history, summary, and other auxiliary outputs are existence-checked
+without being interpreted. Absolute paths and parent-directory traversal are
+rejected, and the JSON summary contains filenames only.
 
 The `checkpoint-v1` envelope requires the model state dictionary, architecture,
 class count, positive STFT dimensions, and `stftProfile: "stft-v1"`. Prediction
