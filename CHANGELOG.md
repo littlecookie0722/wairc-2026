@@ -7,12 +7,21 @@ verified repository changes; they do not imply a release has been published.
 
 Future unreleased changes will be listed here before the next release.
 
+## [0.5.0] - 2026-08-14
+
 ### Added
 
 - `wairc benchmark summarize` validates `benchmark-report-v1` and renders a
   compact path-safe Markdown summary for CPU and robustness profiles.
 - `robustness-small` now includes controlled frequency-offset, timing-offset,
   and signal-gain conditions in addition to noise and missing-node checks.
+
+### Compatibility
+
+- Existing interleaved-IQ transforms, `src.*` entry points, STFT defaults, and
+  competition training/inference behavior are unchanged.
+- Benchmark summaries validate report fields and reject absolute or parent-
+  traversal paths without changing generated data or model behavior.
 
 ## [0.4.0] - 2026-08-14
 
