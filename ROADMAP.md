@@ -149,15 +149,18 @@ Future benchmark extensions, if needed, require a separately scoped,
 evidence-backed proposal; no additional condition is currently part of this
 roadmap.
 
-## Planned: v0.12.0 reproducible seed utility
+## Released: v0.12.0 reproducible seed utility
 
-- Consolidate Python, NumPy, and PyTorch CPU/CUDA seed handling behind the
-  public `wairc_rf.set_reproducible_seed` helper.
-- Initialize Python and NumPy state in training DataLoader workers from the
+[v0.12.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.12.0)
+was released on 2026-08-15 with the following verified capabilities:
+
+- The public `wairc_rf.set_reproducible_seed` helper consolidates Python,
+  NumPy, and PyTorch CPU/CUDA seed handling.
+- Training DataLoader workers initialize Python and NumPy state from the
   PyTorch worker seed without changing fold splitting, loader shuffle policy,
   or competition data behavior.
-- Document the deterministic-mode boundary and its CUDA limitations with
-  focused regression coverage.
+- Focused regression coverage and reproducibility documentation define the
+  deterministic-mode boundary and CUDA limitations.
 
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
