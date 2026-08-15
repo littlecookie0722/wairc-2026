@@ -20,6 +20,7 @@ compatibility while implementation details are migrated incrementally.
 | `RFDatasetAdapter` | sequence protocol returning `RFSample` |
 | `SyntheticDatasetAdapter` | `(samples)` |
 | `CompetitionDatasetAdapter` | `(root, has_labels=...)` |
+| `set_reproducible_seed` | `(seed, *, deterministic=False)` |
 
 The dataset symbols provide the first public interoperability contract. The
 competition adapter reads the existing `index.csv` and three-node NPZ format
@@ -30,6 +31,21 @@ files lazily and returns nodes in fixed `node0`, `node1`, `node2` order.
 fixture `RFSample` values. It keeps sample order, rejects duplicate IDs, and
 does not write data or infer a file format, so it can be used in CPU tests and
 benchmarks without competition data.
+
+## Reproducible seeds
+
+`set_reproducible_seed` seeds Python, NumPy, and PyTorch CPU/CUDA generators and
+configures the cuDNN benchmark/deterministic preference. Training entry points
+use the default `deterministic=False` mode to preserve their existing cuDNN
+performance preference; k-fold inference uses `deterministic=True`. The
+function does not promise bit-for-bit equality across all CUDA operators,
+devices, or dependency versions.
+
+```python
+from wairc_rf import set_reproducible_seed
+
+set_reproducible_seed(2026)
+```
 
 ```python
 from wairc_rf import CompetitionDatasetAdapter

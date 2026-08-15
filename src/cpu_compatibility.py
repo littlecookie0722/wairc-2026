@@ -8,7 +8,7 @@ import platform
 import numpy as np
 import torch
 
-from wairc_rf import STFTConfig, complex_iq_to_spectrogram, iq_to_spectrogram
+from wairc_rf import STFTConfig, complex_iq_to_spectrogram, iq_to_spectrogram, set_reproducible_seed
 
 from .spectrogram import DroneClassifier
 
@@ -32,7 +32,7 @@ def run_cpu_compatibility() -> dict[str, object]:
     if not np.array_equal(interleaved, native_complex):
         raise AssertionError("Interleaved and native-complex stft-v1 outputs differ")
 
-    torch.manual_seed(2026)
+    set_reproducible_seed(2026, deterministic=True)
     device = torch.device("cpu")
     model = DroneClassifier(num_classes=9, arch="resnet18", pretrained=False, dropout=0.0)
     model.to(device)
