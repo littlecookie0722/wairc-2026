@@ -5,12 +5,26 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [0.12.0] - 2026-08-15
+
 ### Added
 
 - A shared `wairc_rf.set_reproducible_seed` helper seeds Python, NumPy, and
   PyTorch CPU/CUDA generators, while legacy training and inference helpers keep
   their existing entry points. Training DataLoader workers now initialize
   Python and NumPy from PyTorch's worker seed.
+
+### Compatibility
+
+- Training keeps the existing cuDNN benchmark preference by default, while
+  k-fold inference requests deterministic cuDNN selection through the shared
+  helper.
+- Fold split inputs, loader shuffle policy, STFT behavior, labels, checkpoint
+  fields, inference rules, and submission serialization are unchanged.
+- Seed handling remains a reproducibility aid and does not promise bit-for-bit
+  equality across all CUDA operators, devices, or dependency versions.
 
 ## [0.11.0] - 2026-08-14
 
