@@ -7,10 +7,10 @@ verified repository changes; they do not imply a release has been published.
 
 ### Added
 
-- `robustness-small` adds an explicit `all-nodes-present` condition alongside
-  the periodic missing-node baseline and dedicated single-node absence checks.
-  The extension remains synthetic-only and uses the existing missing-node
-  semantics.
+- A shared `wairc_rf.set_reproducible_seed` helper seeds Python, NumPy, and
+  PyTorch CPU/CUDA generators, while legacy training and inference helpers keep
+  their existing entry points. Training DataLoader workers now initialize
+  Python and NumPy from PyTorch's worker seed.
 
 ## [0.11.0] - 2026-08-14
 

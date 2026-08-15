@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import argparse
-import random
 from collections import Counter
 from collections import defaultdict
 from pathlib import Path
@@ -12,6 +11,8 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
+
+from wairc_rf.reproducibility import set_reproducible_seed
 
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, SUBMISSION_PATH, TEST_ROOT
 from .checkpoint import load_checkpoint
@@ -64,12 +65,9 @@ def parse_tag_weights(entries: list[str]) -> dict[str, float]:
 
 
 def seed_inference(seed: int) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
+    """Keep the legacy inference helper backed by the shared seed contract."""
+
+    set_reproducible_seed(seed, deterministic=True)
 
 
 def discover_model_files(save_dir: Path, tags: list[str], include_default: bool) -> list[Path]:

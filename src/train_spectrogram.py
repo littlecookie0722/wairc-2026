@@ -16,6 +16,8 @@ from torch.amp import GradScaler, autocast
 from torch.utils.data import DataLoader
 from tqdm.auto import tqdm
 
+from wairc_rf.reproducibility import seed_worker, set_reproducible_seed
+
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
@@ -81,11 +83,9 @@ def parse_args() -> argparse.Namespace:
 
 
 def seed_everything(seed: int) -> None:
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.benchmark = True
+    """Keep the legacy training helper backed by the shared seed contract."""
+
+    set_reproducible_seed(seed)
 
 
 def split_dataframe(df: pd.DataFrame, val_ratio: float, seed: int) -> tuple[pd.DataFrame, pd.DataFrame]:
@@ -143,6 +143,7 @@ def make_loader(args: argparse.Namespace, dataset: DroneSpectrogramDataset, batc
         pin_memory=device.type == "cuda",
         persistent_workers=args.num_workers > 0,
         drop_last=drop_last,
+        worker_init_fn=seed_worker,
     )
 
 

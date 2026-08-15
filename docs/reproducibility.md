@@ -22,6 +22,21 @@ document:
 When a run uses non-default values, record the complete command and preserve
 the generated config JSON next to the outputs.
 
+## Seed handling
+
+The stable `wairc_rf.set_reproducible_seed` helper seeds Python, NumPy, and
+PyTorch CPU/CUDA generators from one validated integer. It also configures the
+cuDNN benchmark and deterministic preferences. The training entry points keep
+the existing performance-oriented default, while k-fold inference requests the
+deterministic cuDNN mode. Training DataLoader workers derive their Python and
+NumPy seeds from PyTorch's worker seed so NumPy-based crop and SpecAugment
+operations do not share an uninitialized process-global state.
+
+This is a reproducibility aid, not a guarantee of bit-for-bit equality across
+all CUDA operators, devices, driver versions, or dependency versions. Fold
+splitters still receive their explicit seed, and this change does not alter
+the released STFT, label, checkpoint, inference-rule, or submission contracts.
+
 ## Environment record
 
 At minimum, record:

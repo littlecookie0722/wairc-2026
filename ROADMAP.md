@@ -149,6 +149,16 @@ Future benchmark extensions, if needed, require a separately scoped,
 evidence-backed proposal; no additional condition is currently part of this
 roadmap.
 
+## Planned: v0.12.0 reproducible seed utility
+
+- Consolidate Python, NumPy, and PyTorch CPU/CUDA seed handling behind the
+  public `wairc_rf.set_reproducible_seed` helper.
+- Initialize Python and NumPy state in training DataLoader workers from the
+  PyTorch worker seed without changing fold splitting, loader shuffle policy,
+  or competition data behavior.
+- Document the deterministic-mode boundary and its CUDA limitations with
+  focused regression coverage.
+
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.
