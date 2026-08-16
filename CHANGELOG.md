@@ -7,6 +7,23 @@ verified repository changes; they do not imply a release has been published.
 
 No unreleased changes.
 
+## [0.13.0] - 2026-08-16
+
+### Added
+
+- `wairc doctor` checks Python, Torch, Torchvision, CUDA availability, and
+  package version without reading competition data or starting training.
+- The command provides human-readable diagnostics and a machine-readable
+  `doctor-v1` JSON report for automation.
+
+### Compatibility
+
+- Doctor diagnostics are read-only and do not change the competition data
+  schema, label mapping, STFT behavior, fold splitting, inference rules,
+  checkpoint fields, or submission format.
+- Import failures expose only their exception type in structured output; local
+  environment paths and exception messages are not included.
+
 ## [0.12.0] - 2026-08-15
 
 ### Added
