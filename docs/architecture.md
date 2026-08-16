@@ -53,6 +53,7 @@ flowchart LR
 | src/submission.py | Sort sample IDs and serialize 9-value binary predictions | submission text format |
 | src/validate_submission.py | Validate IDs, row count, list shape, and binary values | competition submission contract |
 | src/cli.py | Dispatch a unified `wairc` command to existing entry points | existing module entry points remain supported |
+| src/doctor.py | Report Python, Torch, Torchvision, CUDA availability, and package version without data or training side effects | `doctor-v1` JSON/human output and exit status |
 | src/synthetic_demo.py | Generate public synthetic IQ and exercise a lightweight CPU workflow | demonstration only; no competition-performance claim |
 | src/cpu_compatibility.py | Data-free public-transform, eager CPU-model, and TorchScript CPU compatibility probe | supported Python/CPU execution boundary |
 | src/benchmark.py | Run named synthetic profiles, verify redistributable fixtures, write path-safe manifest/report records, and render Markdown summaries | `benchmark-manifest-v1`, `benchmark-report-v1`, `benchmark-fixture-v1`, synthetic-only metrics |

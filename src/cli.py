@@ -15,6 +15,7 @@ COMMAND_MODULES = {
     "demo": "src.synthetic_demo",
     "benchmark": "src.benchmark",
     "artifact": "src.artifact_cli",
+    "doctor": "src.doctor",
 }
 
 
@@ -30,6 +31,7 @@ def format_help() -> str:
             "  validate       Validate a submission text file",
             "  benchmark      Run a reproducible synthetic benchmark",
             "  artifact       Inspect artifacts or validate a run manifest",
+            "  doctor         Check the local Python and ML runtime",
         ]
     )
     return (

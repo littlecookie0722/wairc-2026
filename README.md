@@ -52,6 +52,8 @@ ensemble inference -> 9-value submission
   `robustness-small` checks with path-safe manifest/report files.
 - `wairc benchmark summarize` for compact Markdown review summaries from
   machine-readable benchmark reports.
+- `wairc doctor` for a lightweight Python, Torch, Torchvision, CUDA, and
+  package-version environment check without accessing competition data.
 - Public `wairc_rf.set_reproducible_seed` support for shared Python, NumPy, and
   PyTorch CPU/CUDA seed handling, including DataLoader worker initialization.
 - Archived early baselines under archived_baselines.
@@ -116,6 +118,12 @@ and synthetic-only boundary.
 List the unified commands with:
 
     wairc --help
+
+Check the installed runtime without reading competition data or running a
+training job:
+
+    wairc doctor
+    wairc doctor --json
 
 Inspect a model, OOF, inference-rule, or STFT cache artifact without exposing
 its local path in the summary:
