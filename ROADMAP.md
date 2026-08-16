@@ -162,6 +162,18 @@ was released on 2026-08-15 with the following verified capabilities:
 - Focused regression coverage and reproducibility documentation define the
   deterministic-mode boundary and CUDA limitations.
 
+## Released: v0.13.0 environment doctor
+
+[v0.13.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.13.0)
+was released on 2026-08-16 with the following verified capabilities:
+
+- `wairc doctor` reports Python, Torch, Torchvision, CUDA availability, and
+  package version without reading competition data or starting training.
+- Human-readable diagnostics and `doctor-v1` JSON output are available for
+  local checks and automation.
+- Structured import failures expose an exception type without copying local
+  environment paths or exception messages into the report.
+
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.
