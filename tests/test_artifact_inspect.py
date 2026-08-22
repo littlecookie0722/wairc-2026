@@ -5,7 +5,7 @@ import pytest
 import torch
 
 from src.artifact_cli import main as artifact_main
-from src.artifact_index import build_artifact_index
+from src.artifact_index import ARTIFACT_INDEX_V2_SCHEMA, build_artifact_index
 from src.artifact_inspect import inspect_artifact, validate_run_manifest
 from src.cache_artifact import write_cache_artifact
 from src.checkpoint import make_checkpoint_payload
@@ -93,7 +93,7 @@ def _write_versioned_artifacts(tmp_path):
     }
 
 
-def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
+def _write_manifest(tmp_path, *, mismatch=False, with_index=False, index_schema="artifact-index-v1"):
     paths = _write_versioned_artifacts(tmp_path)
     checkpoint_payload = torch.load(paths["checkpoint"], map_location="cpu")
     checkpoint_payload["fold"] = 0
@@ -121,7 +121,12 @@ def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
     (tmp_path / "history.json").write_text("[]", encoding="utf-8")
     manifest_path = tmp_path / "run-manifest.json"
     if with_index:
-        manifest["artifactIndex"] = build_artifact_index(manifest["runId"], tmp_path, manifest["outputs"])
+        manifest["artifactIndex"] = build_artifact_index(
+            manifest["runId"],
+            tmp_path,
+            manifest["outputs"],
+            schema_version=index_schema,
+        )
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     return manifest_path
 
@@ -268,12 +273,19 @@ def test_validate_run_manifest_rejects_unsafe_output_reference(tmp_path):
 
 def test_validate_run_manifest_checks_artifact_index_integrity(tmp_path):
     path = _write_manifest(tmp_path, with_index=True)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
 
     result = validate_run_manifest(path)
 
     assert result["valid"] is True
     assert result["details"]["artifactIndexPresent"] is True
     assert result["details"]["indexedArtifactCount"] == 3
+    assert manifest["artifactIndex"]["schemaVersion"] == "artifact-index-v1"
+    assert {entry["role"] for entry in manifest["artifactIndex"]["artifacts"]} == {
+        "checkpoint",
+        "oof",
+        "rule",
+    }
 
     rule_path = tmp_path / "rule.json"
     rule_payload = json.loads(rule_path.read_text(encoding="utf-8"))
@@ -284,6 +296,48 @@ def test_validate_run_manifest_checks_artifact_index_integrity(tmp_path):
     assert changed["valid"] is False
     assert "artifactIndex size mismatch for rule.json" in changed["errors"]
     assert "artifactIndex digest mismatch for rule.json" in changed["errors"]
+
+
+def test_validate_run_manifest_checks_v2_validation_probability_integrity(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True, index_schema=ARTIFACT_INDEX_V2_SCHEMA)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is True
+    assert result["details"]["indexedArtifactCount"] == 4
+    validation_entry = next(
+        entry
+        for entry in manifest["artifactIndex"]["artifacts"]
+        if entry["role"] == "validationProbabilities"
+    )
+    assert validation_entry["artifactType"] == "validation-predictions"
+    assert validation_entry["schemaVersion"] == "validation-predictions-v1"
+
+    validation_path = tmp_path / "best_val_probs.npz"
+    with validation_path.open("ab") as file:
+        file.write(b"\n")
+    assert inspect_artifact(validation_path)["valid"] is True
+
+    changed = validate_run_manifest(path)
+    assert changed["valid"] is False
+    assert "artifactIndex size mismatch for best_val_probs.npz" in changed["errors"]
+    assert "artifactIndex digest mismatch for best_val_probs.npz" in changed["errors"]
+
+
+def test_validate_run_manifest_rejects_unknown_artifact_index_schema(tmp_path):
+    path = _write_manifest(tmp_path, with_index=True)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["artifactIndex"]["schemaVersion"] = "artifact-index-v3"
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert (
+        "artifactIndex must use artifact-index-v1 or artifact-index-v2 metadata"
+        in result["errors"]
+    )
 
 
 def test_validate_run_manifest_rejects_incomplete_artifact_index(tmp_path):

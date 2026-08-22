@@ -375,7 +375,14 @@ def _validate_artifact_index(
     loaded: dict[str, list[tuple[Path, dict[str, Any]]]],
     errors: list[str],
 ) -> int:
-    from .artifact_index import ARTIFACT_INDEX_ALGORITHM, ARTIFACT_INDEX_SCHEMA, INDEXED_OUTPUT_ROLES, file_sha256
+    from .artifact_index import (
+        ARTIFACT_INDEX_ALGORITHM,
+        ARTIFACT_INDEX_V1_SCHEMA,
+        ARTIFACT_INDEX_V2_SCHEMA,
+        INDEXED_OUTPUT_ROLES_V2,
+        file_sha256,
+        indexed_output_roles,
+    )
 
     index = payload.get("artifactIndex")
     if index is None:
@@ -383,8 +390,14 @@ def _validate_artifact_index(
     if not isinstance(index, dict):
         errors.append("artifactIndex must be an object")
         return 0
-    if index.get("schemaVersion") != ARTIFACT_INDEX_SCHEMA:
-        errors.append("artifactIndex must use artifact-index-v1 metadata")
+    schema_version = index.get("schemaVersion")
+    try:
+        indexed_roles = indexed_output_roles(schema_version)
+    except ValueError:
+        errors.append(
+            f"artifactIndex must use {ARTIFACT_INDEX_V1_SCHEMA} or {ARTIFACT_INDEX_V2_SCHEMA} metadata"
+        )
+        indexed_roles = INDEXED_OUTPUT_ROLES_V2
     if index.get("runId") != payload.get("runId"):
         errors.append("artifactIndex runId does not match manifest")
     if index.get("algorithm") != ARTIFACT_INDEX_ALGORITHM:
@@ -397,7 +410,7 @@ def _validate_artifact_index(
     expected = {
         (role, name)
         for role, names in output_paths.items()
-        if role in INDEXED_OUTPUT_ROLES
+        if role in indexed_roles
         for name in names
     }
     loaded_by_key = {
@@ -412,7 +425,7 @@ def _validate_artifact_index(
             continue
         role = entry.get("role")
         file_name = entry.get("fileName")
-        if not isinstance(role, str) or role not in INDEXED_OUTPUT_ROLES:
+        if not isinstance(role, str) or role not in indexed_roles:
             errors.append("artifactIndex entry has an unsupported role")
             continue
         if not isinstance(file_name, str) or _resolve_manifest_output(manifest_path, file_name) is None:

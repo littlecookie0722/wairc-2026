@@ -62,11 +62,12 @@ finalized as `completed` or `failed` so an interrupted run is distinguishable
 from a finished run.
 
 On successful completion, current training entry points also add an optional
-`artifact-index-v1` block. It covers only manifest-declared checkpoints, OOF
-files, and inference rules, recording each filename, artifact type, schema,
-byte size, SHA-256 digest, and fold/tag metadata when present. It does not
-record absolute paths. Existing `run-manifest-v1` files without this optional
-block remain valid.
+artifact index. `artifact-index-v1` covers only manifest-declared checkpoints,
+OOF files, and inference rules. `artifact-index-v2` adds declared validation
+probabilities. Both record each filename, artifact type, schema, byte size,
+SHA-256 digest, and fold/tag metadata when present, without absolute paths.
+K-fold training continues to write v1; single-model training writes v2.
+Existing `run-manifest-v1` files with v1 or without an index remain valid.
 
 After the training index is loaded, each training manifest also records a
 `dataset-fingerprint-v1` summary. It uses SHA-256 over normalized index
@@ -148,8 +149,10 @@ filename, and dtypes remain unchanged; additive metadata records the sample IDs,
 best epoch, selected metric name, and selected metric value. Earlier files with
 only `probs` and `labels` remain readable. `wairc artifact validate-run` checks
 the versioned class, epoch, and metric metadata against `run-manifest-v1` while
-allowing absent metadata in historical files. This role is not added to
-`artifact-index-v1`, so existing indexed manifests retain exact compatibility.
+allowing absent metadata in historical files. Single-model manifests use
+`artifact-index-v2` to verify this file's type, schema, size, and SHA-256 digest.
+The role is not added to `artifact-index-v1`, so existing indexed manifests and
+new K-fold manifests retain exact compatibility.
 
 STFT cache files written by `DroneSpectrogramDataset` use `cache-v1` metadata
 for the `stft-v1` profile, transform dimensions, node count, tensor shape, and
@@ -178,10 +181,12 @@ linked artifacts together:
 
 This read-only check resolves only manifest-declared filenames inside the
 manifest directory. It checks that declared outputs exist, linked checkpoint,
-OOF, and rule files use the expected artifact types, and that public class,
-STFT, fold, and rule `source_files` metadata agree. When an artifact index is
-present, it additionally requires exact declared-artifact coverage and checks
-the recorded type, schema, fold/tag metadata, byte size, and SHA-256 digest.
+OOF, rule, and validation-probability files use the expected artifact types,
+and that public class, STFT, fold, rule `source_files`, best-epoch, and metric
+metadata agree. When an artifact index is present, it additionally requires
+exact schema-specific declared-artifact coverage and checks the recorded type,
+schema, fold/tag metadata, byte size, and SHA-256 digest. V1 covers checkpoints,
+OOF files, and rules; v2 also covers validation probabilities.
 Config, history, summary, and other auxiliary outputs are existence-checked
 without being interpreted. Absolute paths and parent-directory traversal are
 rejected, and the JSON summary contains filenames only.

@@ -18,6 +18,7 @@ from tqdm.auto import tqdm
 
 from wairc_rf.reproducibility import seed_worker, set_reproducible_seed
 
+from .artifact_index import ARTIFACT_INDEX_V2_SCHEMA
 from .config import CACHE_DIR, NUM_CLASSES, OUTPUT_DIR, RANDOM_SEED, TRAIN_ROOT, VAL_RATIO
 from .checkpoint import make_checkpoint_payload
 from .dataset_fingerprint import fingerprint_dataset
@@ -386,6 +387,7 @@ def main() -> None:
                 "config": "config.json",
                 "history": "history.json",
             },
+            artifact_index_schema=ARTIFACT_INDEX_V2_SCHEMA,
             metrics={"bestEpoch": best_epoch, "bestMetric": best_metric, "rule": selected_rule},
         )
         print(f"Finished in {(time.time() - start_time) / 60:.1f} min. Best epoch={best_epoch}.")
