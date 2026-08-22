@@ -38,6 +38,8 @@ ensemble inference -> 9-value submission
 - Versioned `oof-v1` per-fold predictions with legacy-compatible validation.
 - Versioned `oof-aggregate-v1` rule-search probabilities with aggregation
   provenance and legacy-compatible validation.
+- Versioned `validation-predictions-v1` single-model validation probabilities
+  with best-epoch, selection-metric, and sample-ID metadata.
 - Versioned `rule-v1` inference rules with legacy-compatible loading.
 - Versioned `cache-v1` STFT cache metadata with legacy cache loading.
 - `wairc artifact inspect` and `wairc artifact validate` commands for

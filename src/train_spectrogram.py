@@ -41,6 +41,7 @@ from .spectrogram import (
     make_loss,
     search_best_inference_rule,
 )
+from .validation_artifact import write_validation_artifact
 
 
 DEFAULT_SAVE_DIR = OUTPUT_DIR / "spectrogram"
@@ -346,7 +347,15 @@ def main() -> None:
                 best_probs = val_probs
                 best_labels = val_labels
                 torch.save(checkpoint_payload(args, model, epoch, val_metrics), args.save_dir / "best_model.pth")
-                np.savez(args.save_dir / "best_val_probs.npz", probs=val_probs.astype(np.float16), labels=val_labels.astype(np.int8))
+                write_validation_artifact(
+                    args.save_dir / "best_val_probs.npz",
+                    probs=val_probs,
+                    labels=val_labels,
+                    sample_ids=val_df["sample_id"].to_numpy(dtype=np.int64),
+                    epoch=epoch,
+                    metric_name=args.select_metric,
+                    metric_value=selected,
+                )
                 print(f"Saved best checkpoint: epoch={epoch} {args.select_metric}={best_metric:.5f}")
             elif epoch - best_epoch >= args.patience:
                 print(f"Early stopping: no improvement for {args.patience} epochs.")

@@ -5,7 +5,20 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Single-model training now writes `validation-predictions-v1` metadata with
+  sample IDs, best epoch, selection metric, and metric value while preserving
+  the historical validation probability arrays and filename.
+- Artifact inspection and run-manifest validation recognize versioned and
+  historical validation prediction files.
+
+### Compatibility
+
+- Training, validation splitting, probability values, checkpoint selection,
+  threshold search, and submission behavior are unchanged. Historical files
+  containing only `probs` and `labels` remain readable, and
+  `artifact-index-v1` coverage is unchanged.
 
 ## [0.14.0] - 2026-08-22
 

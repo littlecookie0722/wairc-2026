@@ -142,6 +142,15 @@ and source filenames without local directories. The loader and artifact CLI
 continue to accept earlier unversioned aggregate files containing the three
 historical arrays.
 
+Single-model training writes `best_val_probs.npz` using the
+`validation-predictions-v1` schema. The historical `probs` and `labels` arrays,
+filename, and dtypes remain unchanged; additive metadata records the sample IDs,
+best epoch, selected metric name, and selected metric value. Earlier files with
+only `probs` and `labels` remain readable. `wairc artifact validate-run` checks
+the versioned class, epoch, and metric metadata against `run-manifest-v1` while
+allowing absent metadata in historical files. This role is not added to
+`artifact-index-v1`, so existing indexed manifests retain exact compatibility.
+
 STFT cache files written by `DroneSpectrogramDataset` use `cache-v1` metadata
 for the `stft-v1` profile, transform dimensions, node count, tensor shape, and
 node mask. A cache with mismatched metadata, invalid arrays, or corrupted bytes
@@ -155,7 +164,8 @@ The unified CLI can inspect or validate an artifact without rewriting it:
     wairc artifact inspect outputs/models/model.pth --json
     wairc artifact validate outputs/oof/oof_fold0.npz --json
 
-The command detects checkpoint, OOF, inference-rule, and STFT cache files,
+The command detects checkpoint, OOF, aggregate OOF, validation-prediction,
+inference-rule, and STFT cache files,
 reuses their existing compatibility loaders, reports the schema and a small
 path-redacted summary, and exits non-zero when validation fails. Legacy
 unversioned checkpoints, OOF files, rules, and shape-compatible caches are
