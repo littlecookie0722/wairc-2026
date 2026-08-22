@@ -15,40 +15,50 @@ real-data performance.
 
 ## v0.15.0 verification
 
-- [ ] `python -m pytest` passes locally with 197 tests.
-- [ ] `python scripts/smoke_test.py` passes locally.
-- [ ] `python scripts/cpu_compatibility.py` passes locally, including the
+- [x] `python -m pytest` passes locally with 197 tests.
+- [x] `python scripts/smoke_test.py` passes locally.
+- [x] `python scripts/cpu_compatibility.py` passes locally, including the
   eager/TorchScript CPU comparison.
-- [ ] `ruff check src wairc_rf tests scripts` passes locally.
-- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
-- [ ] `wairc --version`, `wairc --help`, both doctor output modes, both
+- [x] `ruff check src wairc_rf tests scripts` passes locally.
+- [x] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [x] `wairc --version`, `wairc --help`, both doctor output modes, both
   synthetic benchmark profiles, both fixture verification commands, the
   summary command, the synthetic demo, and validation artifact inspection pass
   locally.
-- [ ] Source and wheel distributions build successfully, include the v0.15.0
+- [x] Source and wheel distributions build successfully, include the v0.15.0
   release documentation, and include both benchmark fixtures in the source
   distribution.
-- [ ] The wheel installs in an isolated virtual environment with runtime
+- [x] The wheel installs in an isolated virtual environment with runtime
   dependencies; `pip check`, `wairc --version`, both doctor output modes, the
   demo, summary command, both fixture verification commands, validation
   artifact inspection, and CPU compatibility probe pass there. Both synthetic
   profiles pass in the release matrix.
-- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+- [x] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
   commit and tag, including package, source documentation, and isolated-wheel
-  checks on Python 3.12.
-- [ ] Release contents are inspected for data, model weights, caches, secrets,
+  checks on Python 3.12; tag run
+  [`32578584236`](https://github.com/littlecookie0722/wairc-2026/actions/runs/32578584236)
+  passed.
+- [x] Release contents are inspected for data, model weights, caches, secrets,
   and private paths.
 
 ## v0.15.0 release metadata
 
-- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.15.0`.
-- [ ] `CHANGELOG.md`, migration boundaries, and
+- [x] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.15.0`.
+- [x] `CHANGELOG.md`, migration boundaries, and
   `docs/releases/v0.15.0.md` are prepared.
-- [ ] README and `ROADMAP.md` release text and links are prepared for
+- [x] README and `ROADMAP.md` release text and links are prepared for
   `v0.15.0` publication.
-- [ ] Annotated tag `v0.15.0` points to the verified release commit.
-- [ ] GitHub release `v0.15.0` is published with verified notes, wheel/sdist
-  assets, and no private assets.
+- [x] Annotated tag `v0.15.0` points to the verified release commit
+  `f7ae9cfbc2020a94588296cd33b2e87a2d5729d7`; tag CI run
+  [`32578584236`](https://github.com/littlecookie0722/wairc-2026/actions/runs/32578584236)
+  passed.
+- [x] GitHub release
+  [`v0.15.0`](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.15.0)
+  is published with verified notes, wheel/sdist assets, and no private assets.
+  The wheel SHA-256 is
+  `5f74a31bb06853ed3cef7ab6c18503eb52c545c738c323d44d3a2224d0c603c8`; the
+  source distribution SHA-256 is
+  `a2ecd9936af7567a04a80483f2c0b5559240f1e993f894d188abc65c7251863a`.
 
 ## v0.14.0 verification
 
