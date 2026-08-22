@@ -199,6 +199,19 @@ was released on 2026-08-22 with the following verified capabilities:
 - The artifact CLI validates versioned and historical validation predictions
   and checks their class, epoch, and metric linkage to `run-manifest-v1`.
 
+## Released: v0.16.0 validation artifact integrity
+
+[v0.16.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.16.0)
+was released on 2026-08-22 with the following verified capabilities:
+
+- `artifact-index-v2` adds content-addressed coverage for single-model
+  validation probabilities, including artifact type, schema, byte size, and
+  SHA-256 digest validation.
+- Single-model training writes v2 indexes, while K-fold training and the
+  default finalizer retain exact `artifact-index-v1` coverage.
+- `wairc artifact validate-run` accepts v1, v2, and historical no-index
+  manifests while rejecting unknown index schemas.
+
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.
