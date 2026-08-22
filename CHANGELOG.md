@@ -5,6 +5,10 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [0.14.0] - 2026-08-22
+
 ### Added
 
 - Rule search now writes `oof-aggregate-v1` metadata alongside its historical
