@@ -11,6 +11,7 @@ import numpy as np
 
 from .cache_artifact import CACHE_ARTIFACT_TYPE, CACHE_SCHEMA, LEGACY_CACHE_SCHEMA, load_cache_artifact
 from .checkpoint import load_checkpoint
+from .oof_aggregate_artifact import load_oof_aggregate_artifact
 from .oof_artifact import load_oof_artifact
 from .rule_artifact import LEGACY_RULE_SCHEMA, RULE_ARTIFACT_TYPE, RULE_SCHEMA, load_rule_artifact
 from .run_manifest import RUN_MANIFEST_SCHEMA
@@ -45,6 +46,8 @@ def inspect_artifact(path: Path) -> dict[str, Any]:
             result.update(_inspect_checkpoint(path))
         elif kind == "oof":
             result.update(_inspect_oof(path))
+        elif kind == "oof-aggregate":
+            result.update(_inspect_oof_aggregate(path))
         elif kind == "cache":
             result.update(_inspect_cache(path))
         elif kind == "rule":
@@ -74,6 +77,8 @@ def _detect_kind(path: Path) -> str:
         raise ValueError("Unable to read NPZ artifact") from error
     if {"probs", "labels", "indices"}.issubset(keys):
         return "oof"
+    if {"probs", "labels", "sample_ids"}.issubset(keys):
+        return "oof-aggregate"
     if {"x", "node_mask"}.issubset(keys):
         return "cache"
     return "unknown"
@@ -431,6 +436,22 @@ def _inspect_oof(path: Path) -> dict[str, Any]:
         "fold": artifact["fold"],
         "sampleIdsPresent": "sample_ids" in keys,
         "metrics": [float(value) for value in metrics.tolist()],
+    }
+    return _valid_summary(
+        artifact_type=str(artifact["artifactType"]),
+        schema=str(artifact["schemaVersion"]),
+        details=details,
+    )
+
+
+def _inspect_oof_aggregate(path: Path) -> dict[str, Any]:
+    artifact = load_oof_aggregate_artifact(path)
+    details: dict[str, Any] = {
+        "rows": int(artifact["probs"].shape[0]),
+        "classes": int(artifact["probs"].shape[1]),
+        "aggregationMethod": artifact["aggregationMethod"],
+        "sourceFiles": artifact["source_files"],
+        "tagWeights": artifact["tag_weights"],
     }
     return _valid_summary(
         artifact_type=str(artifact["artifactType"]),

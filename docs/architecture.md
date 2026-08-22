@@ -44,6 +44,7 @@ flowchart LR
 | src/checkpoint.py | Versioned model checkpoint metadata and legacy-compatible loading | `checkpoint-v1` fields and loader validation |
 | src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
 | src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
+| src/oof_aggregate_artifact.py | Versioned mean or tag-weighted OOF aggregates produced by rule search | `oof-aggregate-v1` arrays, source filenames, and aggregation metadata |
 | src/rule_artifact.py | Versioned inference-rule payloads and legacy-compatible loading | `rule-v1` methods, thresholds, and class count |
 | src/cache_artifact.py | Versioned STFT cache metadata and legacy-compatible tensor loading | `cache-v1` transform, shape, and node-mask contract |
 | src/artifact_inspect.py | Unified artifact detection, validation, run-manifest linkage checks, and path-redacted summaries | checkpoint/OOF/rule/cache/manifest compatibility contracts |
@@ -114,11 +115,13 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   selected environment and Git provenance, a `dataset-fingerprint-v1` summary,
   model checkpoints carrying the `checkpoint-v1` metadata envelope, and
   per-fold `oof-v1` artifacts, `rule-v1` inference rules, and `cache-v1` STFT
-  caches. Newly completed manifests optionally embed `artifact-index-v1`
+  caches. Rule search writes legacy-array-compatible `oof-aggregate-v1`
+  probabilities with path-free source and weighting metadata. Newly completed
+  manifests optionally embed `artifact-index-v1`
   references for declared checkpoints, OOF files, and rules. The artifact CLI
   validates their linkage, metadata, size, and digest without interpreting
-  auxiliary config/history files. Aggregated probability schemas and richer
-  metadata production remain follow-up work.
+  auxiliary config/history files. Richer metadata production remains
+  follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT

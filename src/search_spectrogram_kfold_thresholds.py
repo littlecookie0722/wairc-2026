@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.metrics import f1_score
 
 from .config import NUM_CLASSES
+from .oof_aggregate_artifact import write_oof_aggregate_artifact
 from .oof_artifact import load_oof_artifact
 from .rule_artifact import make_rule_payload, write_rule_artifact
 from .spectrogram import apply_inference_rule, search_best_inference_rule
@@ -178,7 +179,14 @@ def main() -> None:
     )
 
     write_rule_artifact(output, rule_payload)
-    np.savez(output.with_suffix(".oof_probs.npz"), probs=probs.astype(np.float16), labels=labels.astype(np.int8), sample_ids=sample_ids)
+    write_oof_aggregate_artifact(
+        output.with_suffix(".oof_probs.npz"),
+        probs=probs,
+        labels=labels,
+        sample_ids=sample_ids,
+        source_files=[path.name for path in paths],
+        tag_weights=tag_weights,
+    )
 
     sums = preds.sum(axis=1)
     print(f"Saved rule: {output}")

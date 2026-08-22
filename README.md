@@ -36,6 +36,8 @@ ensemble inference -> 9-value submission
 - Sanitized `dataset-fingerprint-v1` summaries in training manifests.
 - Versioned `checkpoint-v1` model metadata with legacy checkpoint loading.
 - Versioned `oof-v1` per-fold predictions with legacy-compatible validation.
+- Versioned `oof-aggregate-v1` rule-search probabilities with aggregation
+  provenance and legacy-compatible validation.
 - Versioned `rule-v1` inference rules with legacy-compatible loading.
 - Versioned `cache-v1` STFT cache metadata with legacy cache loading.
 - `wairc artifact inspect` and `wairc artifact validate` commands for
