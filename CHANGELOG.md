@@ -5,6 +5,10 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [0.15.0] - 2026-08-22
+
 ### Added
 
 - Single-model training now writes `validation-predictions-v1` metadata with

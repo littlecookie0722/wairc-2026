@@ -186,6 +186,19 @@ was released on 2026-08-22 with the following verified capabilities:
 - The artifact CLI validates and summarizes versioned aggregate files and
   remains compatible with historical unversioned aggregate outputs.
 
+## Released: v0.15.0 validation prediction provenance
+
+[v0.15.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.15.0)
+was released on 2026-08-22 with the following verified capabilities:
+
+- Single-model training writes `validation-predictions-v1` metadata while
+  preserving the historical validation probability arrays, dtypes, and output
+  filename.
+- Validation artifacts record sample IDs, best epoch, selection metric, metric
+  value, class count, schema, and artifact type.
+- The artifact CLI validates versioned and historical validation predictions
+  and checks their class, epoch, and metric linkage to `run-manifest-v1`.
+
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.
