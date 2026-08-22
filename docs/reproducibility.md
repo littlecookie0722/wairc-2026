@@ -134,6 +134,14 @@ shared reader accepts the prior top-level rule shapes and missing-file default,
 validates thresholds before prediction, and strips local directory components
 from recorded OOF source filenames.
 
+Rule search also writes the historical `*.oof_probs.npz` output using the
+`oof-aggregate-v1` schema. The existing `probs`, `labels`, and `sample_ids`
+arrays and the mean or tag-weighted probability calculation are unchanged.
+The additive metadata records the aggregation method, normalized tag weights,
+and source filenames without local directories. The loader and artifact CLI
+continue to accept earlier unversioned aggregate files containing the three
+historical arrays.
+
 STFT cache files written by `DroneSpectrogramDataset` use `cache-v1` metadata
 for the `stft-v1` profile, transform dimensions, node count, tensor shape, and
 node mask. A cache with mismatched metadata, invalid arrays, or corrupted bytes
@@ -249,3 +257,8 @@ Before changing STFT, labels, fold splitting, thresholds, ensemble weighting,
 checkpoint metadata, or submission serialization, compare the old and new
 behavior on the same synthetic or saved input. Record shape, dtype, maximum
 absolute difference where meaningful, and the resulting submission diff.
+
+For `oof-aggregate-v1`, the compatibility comparison preserves the output
+filename and historical array names. Probabilities are still serialized as
+`float16`, labels as `int8`, and sample IDs as `int64`; only validated metadata
+arrays are added.

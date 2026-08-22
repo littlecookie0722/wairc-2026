@@ -10,6 +10,7 @@ from src.artifact_inspect import inspect_artifact, validate_run_manifest
 from src.cache_artifact import write_cache_artifact
 from src.checkpoint import make_checkpoint_payload
 from src.oof_artifact import write_oof_artifact
+from src.oof_aggregate_artifact import write_oof_aggregate_artifact
 from src.rule_artifact import make_rule_payload, write_rule_artifact
 
 
@@ -62,7 +63,16 @@ def _write_versioned_artifacts(tmp_path):
         target_freq=5,
         cache_time=7,
     )
-    return {"checkpoint": checkpoint, "oof": oof, "rule": rule, "cache": cache}
+    aggregate = tmp_path / "rule.oof_probs.npz"
+    values = _oof_values()
+    write_oof_aggregate_artifact(
+        aggregate,
+        probs=values["probs"],
+        labels=values["labels"],
+        sample_ids=values["sample_ids"],
+        source_files=[oof.name],
+    )
+    return {"checkpoint": checkpoint, "oof": oof, "rule": rule, "cache": cache, "aggregate": aggregate}
 
 
 def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
@@ -97,7 +107,7 @@ def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
     return manifest_path
 
 
-@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache"])
+@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate"])
 def test_inspect_artifact_summarizes_versioned_artifacts_without_absolute_paths(tmp_path, kind):
     path = _write_versioned_artifacts(tmp_path)[kind]
 
@@ -106,16 +116,17 @@ def test_inspect_artifact_summarizes_versioned_artifacts_without_absolute_paths(
     assert result["valid"] is True
     assert result["fileName"] == path.name
     assert str(path) not in json.dumps(result)
-    assert result["schemaVersion"] in {"checkpoint-v1", "oof-v1", "rule-v1", "cache-v1"}
+    assert result["schemaVersion"] in {"checkpoint-v1", "oof-v1", "rule-v1", "cache-v1", "oof-aggregate-v1"}
 
 
-@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache"])
+@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate"])
 def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
     paths = {
         "checkpoint": tmp_path / "legacy.pth",
         "oof": tmp_path / "legacy.npz",
         "rule": tmp_path / "legacy.json",
         "cache": tmp_path / "legacy-cache.npz",
+        "aggregate": tmp_path / "legacy-aggregate.npz",
     }
     if kind == "checkpoint":
         torch.save({"model_state_dict": {"weight": torch.zeros(1)}, "arch": "resnet18"}, paths[kind])
@@ -124,6 +135,14 @@ def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
         np.savez(paths[kind], probs=values["probs"], labels=values["labels"], indices=values["indices"])
     elif kind == "rule":
         paths[kind].write_text(json.dumps({"thresholds": [0.5] * 9}), encoding="utf-8")
+    elif kind == "aggregate":
+        values = _oof_values()
+        np.savez(
+            paths[kind],
+            probs=values["probs"],
+            labels=values["labels"],
+            sample_ids=values["sample_ids"],
+        )
     else:
         np.savez_compressed(
             paths[kind],

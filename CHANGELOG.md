@@ -5,7 +5,18 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- Rule search now writes `oof-aggregate-v1` metadata alongside its historical
+  probability, label, and sample-ID arrays. The artifact records mean or
+  tag-weighted aggregation, normalized weights, and path-free source filenames.
+- `wairc artifact inspect|validate` recognizes both versioned and historical
+  aggregate OOF probability files.
+
+### Compatibility
+
+- The aggregate output filename, arrays, dtypes, average and weighted formulas,
+  threshold search, inference rules, and submission behavior are unchanged.
 
 ## [0.13.0] - 2026-08-16
 
