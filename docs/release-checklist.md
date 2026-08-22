@@ -1,6 +1,6 @@
 # Release Checklist
 
-This document records the `v0.13.0`, `v0.12.0`, `v0.11.0`, `v0.10.0`, `v0.9.0`, `v0.8.0`, `v0.7.0`, `v0.6.0`, `v0.5.0`, `v0.4.0`, `v0.3.0`, and `v0.2.0` release gates. A
+This document records the `v0.14.0`, `v0.13.0`, `v0.12.0`, `v0.11.0`, `v0.10.0`, `v0.9.0`, `v0.8.0`, `v0.7.0`, `v0.6.0`, `v0.5.0`, `v0.4.0`, `v0.3.0`, and `v0.2.0` release gates. A
 checked item is backed by local or GitHub verification; it is not a claim about
 real-data performance.
 
@@ -12,6 +12,43 @@ real-data performance.
 - [x] The release preserves the 0..8 label mapping, interleaved IQ parsing,
   missing-node semantics, `stft-v1`, fold behavior, inference rules, ensemble
   weighting, checkpoint compatibility, and submission format.
+
+## v0.14.0 verification
+
+- [ ] `python -m pytest` passes locally with 183 tests.
+- [ ] `python scripts/smoke_test.py` passes locally.
+- [ ] `python scripts/cpu_compatibility.py` passes locally, including the
+  eager/TorchScript CPU comparison.
+- [ ] `ruff check src wairc_rf tests scripts` passes locally.
+- [ ] `python -m compileall -q src wairc_rf archived_baselines` passes locally.
+- [ ] `wairc --version`, `wairc --help`, both doctor output modes, both
+  synthetic benchmark profiles, both fixture verification commands, the
+  summary command, the synthetic demo, and aggregate artifact inspection pass
+  locally.
+- [ ] Source and wheel distributions build successfully, include the v0.14.0
+  release documentation, and include both benchmark fixtures in the source
+  distribution.
+- [ ] The wheel installs in an isolated virtual environment with runtime dependencies;
+  `pip check`, `wairc --version`, both doctor output modes, the demo, summary
+  command, both fixture verification commands, aggregate artifact inspection,
+  and CPU compatibility probe pass there. Both synthetic profiles pass in the
+  release matrix.
+- [ ] GitHub Actions passes on Python 3.10, 3.11, and 3.12 for the release
+  commit and tag, including package, source documentation, and isolated-wheel
+  checks on Python 3.12.
+- [ ] Release contents are inspected for data, model weights, caches, secrets,
+  and private paths.
+
+## v0.14.0 release metadata
+
+- [ ] `pyproject.toml`, `src/__init__.py`, and `CITATION.cff` use `0.14.0`.
+- [ ] `CHANGELOG.md`, migration boundaries, and
+  `docs/releases/v0.14.0.md` are prepared.
+- [ ] README and `ROADMAP.md` release text and links are prepared for
+  `v0.14.0` publication.
+- [ ] Annotated tag `v0.14.0` points to the verified release commit.
+- [ ] GitHub release `v0.14.0` is published with verified notes, wheel/sdist
+  assets, and no private assets.
 
 ## v0.13.0 verification
 

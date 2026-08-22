@@ -47,7 +47,7 @@ flowchart LR
 | src/oof_aggregate_artifact.py | Versioned mean or tag-weighted OOF aggregates produced by rule search | `oof-aggregate-v1` arrays, source filenames, and aggregation metadata |
 | src/rule_artifact.py | Versioned inference-rule payloads and legacy-compatible loading | `rule-v1` methods, thresholds, and class count |
 | src/cache_artifact.py | Versioned STFT cache metadata and legacy-compatible tensor loading | `cache-v1` transform, shape, and node-mask contract |
-| src/artifact_inspect.py | Unified artifact detection, validation, run-manifest linkage checks, and path-redacted summaries | checkpoint/OOF/rule/cache/manifest compatibility contracts |
+| src/artifact_inspect.py | Unified artifact detection, validation, run-manifest linkage checks, and path-redacted summaries | checkpoint/OOF/OOF aggregate/rule/cache/manifest compatibility contracts |
 | src/artifact_cli.py | `wairc artifact inspect|validate|validate-run` command dispatch and JSON/human output | machine-readable artifact checks and exit status |
 | src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities, select, and write a rule artifact | OOF/rule schemas and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |

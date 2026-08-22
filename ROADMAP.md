@@ -174,6 +174,18 @@ was released on 2026-08-16 with the following verified capabilities:
 - Structured import failures expose an exception type without copying local
   environment paths or exception messages into the report.
 
+## Released: v0.14.0 aggregated OOF provenance
+
+[v0.14.0](https://github.com/littlecookie0722/wairc-2026/releases/tag/v0.14.0)
+was released on 2026-08-22 with the following verified capabilities:
+
+- Rule search writes `oof-aggregate-v1` metadata while preserving the existing
+  probability, label, and sample-ID arrays and output filename.
+- Mean and tag-weighted outputs record their aggregation method, normalized
+  weights, and path-free source filenames without changing their formulas.
+- The artifact CLI validates and summarizes versioned aggregate files and
+  remains compatible with historical unversioned aggregate outputs.
+
 Only the released sections describe completed capability. All other items are
 intentions rather than completion claims; use GitHub issues and pull requests
 to discuss and implement individual items.
