@@ -12,6 +12,7 @@ from src.checkpoint import make_checkpoint_payload
 from src.oof_artifact import write_oof_artifact
 from src.oof_aggregate_artifact import write_oof_aggregate_artifact
 from src.rule_artifact import make_rule_payload, write_rule_artifact
+from src.validation_artifact import write_validation_artifact
 
 
 def _checkpoint_payload():
@@ -72,7 +73,24 @@ def _write_versioned_artifacts(tmp_path):
         sample_ids=values["sample_ids"],
         source_files=[oof.name],
     )
-    return {"checkpoint": checkpoint, "oof": oof, "rule": rule, "cache": cache, "aggregate": aggregate}
+    validation = tmp_path / "best_val_probs.npz"
+    write_validation_artifact(
+        validation,
+        probs=values["probs"],
+        labels=values["labels"],
+        sample_ids=values["sample_ids"],
+        epoch=2,
+        metric_name="strict",
+        metric_value=0.75,
+    )
+    return {
+        "checkpoint": checkpoint,
+        "oof": oof,
+        "rule": rule,
+        "cache": cache,
+        "aggregate": aggregate,
+        "validation": validation,
+    }
 
 
 def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
@@ -91,6 +109,7 @@ def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
             "checkpoint": "model.pth",
             "oof": ["oof.npz"],
             "rule": "rule.json",
+            "validationProbabilities": "best_val_probs.npz",
             "config": "config.json",
             "history": "history.json",
         },
@@ -107,7 +126,7 @@ def _write_manifest(tmp_path, *, mismatch=False, with_index=False):
     return manifest_path
 
 
-@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate"])
+@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate", "validation"])
 def test_inspect_artifact_summarizes_versioned_artifacts_without_absolute_paths(tmp_path, kind):
     path = _write_versioned_artifacts(tmp_path)[kind]
 
@@ -116,10 +135,17 @@ def test_inspect_artifact_summarizes_versioned_artifacts_without_absolute_paths(
     assert result["valid"] is True
     assert result["fileName"] == path.name
     assert str(path) not in json.dumps(result)
-    assert result["schemaVersion"] in {"checkpoint-v1", "oof-v1", "rule-v1", "cache-v1", "oof-aggregate-v1"}
+    assert result["schemaVersion"] in {
+        "checkpoint-v1",
+        "oof-v1",
+        "rule-v1",
+        "cache-v1",
+        "oof-aggregate-v1",
+        "validation-predictions-v1",
+    }
 
 
-@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate"])
+@pytest.mark.parametrize("kind", ["checkpoint", "oof", "rule", "cache", "aggregate", "validation"])
 def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
     paths = {
         "checkpoint": tmp_path / "legacy.pth",
@@ -127,6 +153,7 @@ def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
         "rule": tmp_path / "legacy.json",
         "cache": tmp_path / "legacy-cache.npz",
         "aggregate": tmp_path / "legacy-aggregate.npz",
+        "validation": tmp_path / "legacy-validation.npz",
     }
     if kind == "checkpoint":
         torch.save({"model_state_dict": {"weight": torch.zeros(1)}, "arch": "resnet18"}, paths[kind])
@@ -143,6 +170,9 @@ def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
             labels=values["labels"],
             sample_ids=values["sample_ids"],
         )
+    elif kind == "validation":
+        values = _oof_values()
+        np.savez(paths[kind], probs=values["probs"], labels=values["labels"])
     else:
         np.savez_compressed(
             paths[kind],
@@ -156,6 +186,25 @@ def test_inspect_artifact_accepts_legacy_formats(tmp_path, kind):
     assert result["schemaVersion"] == "legacy-unversioned"
 
 
+def test_inspect_artifact_routes_malformed_aggregate_to_aggregate_validation(tmp_path):
+    path = tmp_path / "malformed-aggregate.npz"
+    values = _oof_values()
+    np.savez(
+        path,
+        schemaVersion=np.asarray(["oof-aggregate-v1"]),
+        aggregationMethod=np.asarray("mean"),
+        probs=values["probs"],
+        labels=values["labels"],
+        sample_ids=values["sample_ids"],
+    )
+
+    result = inspect_artifact(path)
+
+    assert result["valid"] is False
+    assert "OOF aggregate metadata schemaVersion must be a scalar string" in result["error"]
+    assert "Unable to read NPZ artifact" not in result["error"]
+
+
 def test_validate_run_manifest_checks_linked_artifacts_without_paths(tmp_path):
     path = _write_manifest(tmp_path)
 
@@ -163,9 +212,10 @@ def test_validate_run_manifest_checks_linked_artifacts_without_paths(tmp_path):
 
     assert result["valid"] is True
     assert result["artifactType"] == "run-manifest"
-    assert result["details"]["outputCount"] == 5
+    assert result["details"]["outputCount"] == 6
     assert result["details"]["artifactIndexPresent"] is False
     assert result["details"]["indexedArtifactCount"] == 0
+    assert result["details"]["validatedArtifactCount"] == 4
     assert str(tmp_path) not in json.dumps(result)
 
 
@@ -187,6 +237,21 @@ def test_validate_run_manifest_rejects_mismatched_rule_sources(tmp_path):
 
     assert result["valid"] is False
     assert "rule source_files do not match manifest oof outputs" in result["errors"]
+
+
+def test_validate_run_manifest_rejects_mismatched_validation_metadata(tmp_path):
+    path = _write_manifest(tmp_path)
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    manifest["training"]["selectMetric"] = "macro_f1"
+    manifest["metrics"] = {"bestEpoch": 3, "bestMetric": 0.5}
+    path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    result = validate_run_manifest(path)
+
+    assert result["valid"] is False
+    assert "validationProbabilities metric does not match manifest" in result["errors"]
+    assert "validationProbabilities epoch does not match manifest" in result["errors"]
+    assert "validationProbabilities metric value does not match manifest" in result["errors"]
 
 
 def test_validate_run_manifest_rejects_unsafe_output_reference(tmp_path):

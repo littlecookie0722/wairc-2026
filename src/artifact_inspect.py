@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any
@@ -11,15 +12,20 @@ import numpy as np
 
 from .cache_artifact import CACHE_ARTIFACT_TYPE, CACHE_SCHEMA, LEGACY_CACHE_SCHEMA, load_cache_artifact
 from .checkpoint import load_checkpoint
-from .oof_aggregate_artifact import load_oof_aggregate_artifact
+from .oof_aggregate_artifact import (
+    OOF_AGGREGATE_ARTIFACT_TYPE,
+    OOF_AGGREGATE_SCHEMA,
+    load_oof_aggregate_artifact,
+)
 from .oof_artifact import load_oof_artifact
 from .rule_artifact import LEGACY_RULE_SCHEMA, RULE_ARTIFACT_TYPE, RULE_SCHEMA, load_rule_artifact
 from .run_manifest import RUN_MANIFEST_SCHEMA
+from .validation_artifact import VALIDATION_ARTIFACT_TYPE, VALIDATION_SCHEMA, load_validation_artifact
 
 
 CHECKPOINT_SUFFIXES = {".ckpt", ".pt", ".pth"}
 MANIFEST_NAMES = {"run-manifest.json"}
-LINKED_OUTPUT_ROLES = {"checkpoint", "checkpoints", "oof", "rule"}
+LINKED_OUTPUT_ROLES = {"checkpoint", "checkpoints", "oof", "rule", "validationProbabilities"}
 
 
 def inspect_artifact(path: Path) -> dict[str, Any]:
@@ -48,6 +54,8 @@ def inspect_artifact(path: Path) -> dict[str, Any]:
             result.update(_inspect_oof(path))
         elif kind == "oof-aggregate":
             result.update(_inspect_oof_aggregate(path))
+        elif kind == "validation":
+            result.update(_inspect_validation(path))
         elif kind == "cache":
             result.update(_inspect_cache(path))
         elif kind == "rule":
@@ -73,15 +81,41 @@ def _detect_kind(path: Path) -> str:
     try:
         with np.load(path, allow_pickle=False) as data:
             keys = set(data.files)
+            schema = _optional_npz_scalar_string(data, "schemaVersion")
+            artifact_type = _optional_npz_scalar_string(data, "artifactType")
     except Exception as error:
         raise ValueError("Unable to read NPZ artifact") from error
     if {"probs", "labels", "indices"}.issubset(keys):
         return "oof"
+    if (
+        schema == OOF_AGGREGATE_SCHEMA
+        or artifact_type == OOF_AGGREGATE_ARTIFACT_TYPE
+        or "aggregationMethod" in keys
+    ):
+        return "oof-aggregate"
+    if (
+        schema == VALIDATION_SCHEMA
+        or artifact_type == VALIDATION_ARTIFACT_TYPE
+        or {"epoch", "metricName", "metricValue"}.intersection(keys)
+    ):
+        return "validation"
     if {"probs", "labels", "sample_ids"}.issubset(keys):
         return "oof-aggregate"
+    if {"probs", "labels"}.issubset(keys):
+        return "validation"
     if {"x", "node_mask"}.issubset(keys):
         return "cache"
     return "unknown"
+
+
+def _optional_npz_scalar_string(data: Any, key: str) -> str | None:
+    if key not in data:
+        return None
+    value = data[key]
+    if value.shape != ():
+        return None
+    scalar = value.item()
+    return scalar if isinstance(scalar, str) else None
 
 
 def validate_run_manifest(path: Path) -> dict[str, Any]:
@@ -196,6 +230,8 @@ def _expected_artifact_type(role: str) -> str:
         return "oof-predictions"
     if role == "rule":
         return RULE_ARTIFACT_TYPE
+    if role == "validationProbabilities":
+        return VALIDATION_ARTIFACT_TYPE
     raise ValueError(f"Unsupported linked output role {role}")
 
 
@@ -236,6 +272,12 @@ def _validate_manifest_linkage(
         if expected_classes is not None and details.get("numClasses") not in {None, expected_classes}:
             errors.append("rule class count does not match manifest")
 
+    for _, summary in loaded.get("validationProbabilities", []):
+        details = summary.get("details", {})
+        if expected_classes is not None and details.get("classes") != expected_classes:
+            errors.append("validationProbabilities class count does not match manifest")
+        _validate_validation_linkage(payload, details, errors)
+
     if output_paths.get("rule") and output_paths.get("oof"):
         for rule_path, _ in loaded.get("rule", []):
             try:
@@ -267,6 +309,30 @@ def _manifest_num_classes(payload: dict[str, Any]) -> int | None:
         return None
     value = model.get("numClasses")
     return value if isinstance(value, int) and not isinstance(value, bool) else None
+
+
+def _validate_validation_linkage(payload: dict[str, Any], details: dict[str, Any], errors: list[str]) -> None:
+    training = payload.get("training")
+    expected_metric = training.get("selectMetric") if isinstance(training, dict) else None
+    actual_metric = details.get("metricName")
+    if isinstance(expected_metric, str) and actual_metric not in {None, expected_metric}:
+        errors.append("validationProbabilities metric does not match manifest")
+
+    metrics = payload.get("metrics")
+    if not isinstance(metrics, dict):
+        return
+    expected_epoch = metrics.get("bestEpoch")
+    actual_epoch = details.get("epoch")
+    if isinstance(expected_epoch, int) and not isinstance(expected_epoch, bool) and actual_epoch not in {
+        None,
+        expected_epoch,
+    }:
+        errors.append("validationProbabilities epoch does not match manifest")
+    expected_value = metrics.get("bestMetric")
+    actual_value = details.get("metricValue")
+    if isinstance(expected_value, (int, float)) and not isinstance(expected_value, bool) and actual_value is not None:
+        if not math.isclose(float(actual_value), float(expected_value), rel_tol=1e-6, abs_tol=1e-7):
+            errors.append("validationProbabilities metric value does not match manifest")
 
 
 def _manifest_transform(payload: dict[str, Any]) -> dict[str, int | str]:
@@ -452,6 +518,23 @@ def _inspect_oof_aggregate(path: Path) -> dict[str, Any]:
         "aggregationMethod": artifact["aggregationMethod"],
         "sourceFiles": artifact["source_files"],
         "tagWeights": artifact["tag_weights"],
+    }
+    return _valid_summary(
+        artifact_type=str(artifact["artifactType"]),
+        schema=str(artifact["schemaVersion"]),
+        details=details,
+    )
+
+
+def _inspect_validation(path: Path) -> dict[str, Any]:
+    artifact = load_validation_artifact(path)
+    details: dict[str, Any] = {
+        "rows": int(artifact["probs"].shape[0]),
+        "classes": int(artifact["probs"].shape[1]),
+        "sampleIdsPresent": artifact["sample_ids"] is not None,
+        "epoch": artifact["epoch"],
+        "metricName": artifact["metricName"],
+        "metricValue": artifact["metricValue"],
     }
     return _valid_summary(
         artifact_type=str(artifact["artifactType"]),

@@ -45,9 +45,10 @@ flowchart LR
 | src/dataset_fingerprint.py | Root-independent SHA-256 summaries of normalized index metadata and referenced IQ content | `dataset-fingerprint-v1` schema and privacy boundary |
 | src/oof_artifact.py | Versioned per-fold out-of-fold predictions and legacy-compatible validation | `oof-v1` array and metadata contract |
 | src/oof_aggregate_artifact.py | Versioned mean or tag-weighted OOF aggregates produced by rule search | `oof-aggregate-v1` arrays, source filenames, and aggregation metadata |
+| src/validation_artifact.py | Versioned single-model best-validation predictions and legacy loading | `validation-predictions-v1` arrays, sample IDs, epoch, and metric metadata |
 | src/rule_artifact.py | Versioned inference-rule payloads and legacy-compatible loading | `rule-v1` methods, thresholds, and class count |
 | src/cache_artifact.py | Versioned STFT cache metadata and legacy-compatible tensor loading | `cache-v1` transform, shape, and node-mask contract |
-| src/artifact_inspect.py | Unified artifact detection, validation, run-manifest linkage checks, and path-redacted summaries | checkpoint/OOF/OOF aggregate/rule/cache/manifest compatibility contracts |
+| src/artifact_inspect.py | Unified artifact detection, validation, run-manifest linkage checks, and path-redacted summaries | checkpoint/OOF/OOF aggregate/validation/rule/cache/manifest compatibility contracts |
 | src/artifact_cli.py | `wairc artifact inspect|validate|validate-run` command dispatch and JSON/human output | machine-readable artifact checks and exit status |
 | src/search_spectrogram_kfold_thresholds.py | Validate, average or weight OOF probabilities, select, and write a rule artifact | OOF/rule schemas and weight semantics |
 | src/predict_spectrogram_kfold.py | Load compatible checkpoints, predict public test, apply rule, write submission | checkpoint metadata and sample order |
@@ -120,8 +121,11 @@ requested, exactly nine values per prediction, and only integer 0/1 values.
   manifests optionally embed `artifact-index-v1`
   references for declared checkpoints, OOF files, and rules. The artifact CLI
   validates their linkage, metadata, size, and digest without interpreting
-  auxiliary config/history files. Richer metadata production remains
-  follow-up work.
+  auxiliary config/history files. Single-model training writes
+  `validation-predictions-v1`; `validate-run` checks its class, best-epoch, and
+  selection-metric linkage, while `artifact-index-v1` deliberately retains its
+  existing checkpoint/OOF/rule coverage for backward compatibility. Richer
+  metadata production remains follow-up work.
 - Full-data training and public-test inference require competition data and
   are not part of CI.
 - Competition data and trained checkpoints are outside the repository's MIT
