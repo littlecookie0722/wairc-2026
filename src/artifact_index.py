@@ -6,26 +6,46 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-ARTIFACT_INDEX_SCHEMA = "artifact-index-v1"
+ARTIFACT_INDEX_V1_SCHEMA = "artifact-index-v1"
+ARTIFACT_INDEX_V2_SCHEMA = "artifact-index-v2"
+ARTIFACT_INDEX_SCHEMA = ARTIFACT_INDEX_V1_SCHEMA
 ARTIFACT_INDEX_ALGORITHM = "sha256"
-INDEXED_OUTPUT_ROLES = {"checkpoint", "checkpoints", "oof", "rule"}
+INDEXED_OUTPUT_ROLES = frozenset({"checkpoint", "checkpoints", "oof", "rule"})
+INDEXED_OUTPUT_ROLES_V2 = INDEXED_OUTPUT_ROLES | {"validationProbabilities"}
 _EXPECTED_ARTIFACT_TYPES = {
     "checkpoint": "model-checkpoint",
     "checkpoints": "model-checkpoint",
     "oof": "oof-predictions",
     "rule": "inference-rule",
+    "validationProbabilities": "validation-predictions",
 }
 
 
-def build_artifact_index(run_id: str, output_dir: Path, outputs: dict[str, Any]) -> dict[str, Any]:
+def indexed_output_roles(schema_version: str) -> frozenset[str]:
+    """Return the exact manifest roles covered by one index schema."""
+    if schema_version == ARTIFACT_INDEX_V1_SCHEMA:
+        return INDEXED_OUTPUT_ROLES
+    if schema_version == ARTIFACT_INDEX_V2_SCHEMA:
+        return INDEXED_OUTPUT_ROLES_V2
+    raise ValueError(f"Unsupported artifact index schema {schema_version!r}")
+
+
+def build_artifact_index(
+    run_id: str,
+    output_dir: Path,
+    outputs: dict[str, Any],
+    *,
+    schema_version: str = ARTIFACT_INDEX_SCHEMA,
+) -> dict[str, Any]:
     """Build content-addressed references for supported manifest outputs."""
     from .artifact_inspect import inspect_artifact
 
     if not isinstance(run_id, str) or not run_id:
         raise ValueError("Artifact index runId must be a non-empty string")
+    indexed_roles = indexed_output_roles(schema_version)
     output_dir = Path(output_dir).resolve()
     artifacts: list[dict[str, Any]] = []
-    for role in sorted(INDEXED_OUTPUT_ROLES):
+    for role in sorted(indexed_roles):
         values = outputs.get(role)
         if values is None:
             continue
@@ -62,7 +82,7 @@ def build_artifact_index(run_id: str, output_dir: Path, outputs: dict[str, Any])
                 entry["tag"] = tag
             artifacts.append(entry)
     return {
-        "schemaVersion": ARTIFACT_INDEX_SCHEMA,
+        "schemaVersion": schema_version,
         "runId": run_id,
         "algorithm": ARTIFACT_INDEX_ALGORITHM,
         "artifacts": artifacts,

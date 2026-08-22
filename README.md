@@ -45,8 +45,9 @@ ensemble inference -> 9-value submission
 - `wairc artifact inspect` and `wairc artifact validate` commands for
   machine-readable artifact summaries and compatibility checks.
 - `wairc artifact validate-run` for read-only run-manifest linkage checks.
-- Optional `artifact-index-v1` references in newly completed training manifests,
-  with path-free SHA-256, size, schema, fold, and tag metadata.
+- Optional `artifact-index-v1` or `artifact-index-v2` references in completed
+  training manifests, with path-free SHA-256, size, schema, fold, and tag
+  metadata. V2 additionally covers single-model validation probabilities.
 - Public `RFNode`/`RFSample` contracts, `SyntheticDatasetAdapter`, and a strict
   competition CSV/NPZ adapter that preserves node order, sample rates, labels,
   and missing nodes.
@@ -138,10 +139,12 @@ its local path in the summary:
 
 The `validate-run` command checks manifest-declared relative outputs, validates
 linked checkpoint/OOF/rule artifacts, and compares their public class, STFT,
-fold, and OOF-source metadata. When an `artifact-index-v1` block is present, it
-also verifies exact artifact coverage, type, schema, fold/tag metadata, byte
-size, and SHA-256 digest. Auxiliary files such as configs and histories are
-checked for existence but are not interpreted as model artifacts.
+fold, and OOF-source metadata. When an artifact index is present, it also
+verifies schema-specific exact coverage, type, schema, fold/tag metadata, byte
+size, and SHA-256 digest. V1 covers checkpoints, OOF files, and rules; v2 also
+covers single-model validation probabilities. Auxiliary files such as configs
+and histories are checked for existence but are not interpreted as model
+artifacts.
 
 Reusable transforms and label helpers are available from the stable Python
 namespace:

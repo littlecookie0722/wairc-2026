@@ -164,14 +164,22 @@ def finalize_run_manifest_with_artifacts(
     status: str,
     *,
     outputs: dict[str, Any],
+    artifact_index_schema: str | None = None,
     **updates: Any,
 ) -> None:
     """Finalize a manifest and add optional content-addressed artifact references."""
     if status != "completed":
         raise ValueError("Artifact indexing requires status 'completed'")
 
-    from .artifact_index import build_artifact_index
+    from .artifact_index import ARTIFACT_INDEX_SCHEMA, build_artifact_index
 
     manifest = json.loads(Path(path).read_text(encoding="utf-8"))
-    artifact_index = build_artifact_index(manifest.get("runId"), Path(path).parent, outputs)
+    artifact_index = build_artifact_index(
+        manifest.get("runId"),
+        Path(path).parent,
+        outputs,
+        schema_version=(
+            ARTIFACT_INDEX_SCHEMA if artifact_index_schema is None else artifact_index_schema
+        ),
+    )
     finalize_run_manifest(path, status, outputs=outputs, artifactIndex=artifact_index, **updates)

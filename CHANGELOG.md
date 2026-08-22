@@ -5,7 +5,19 @@ verified repository changes; they do not imply a release has been published.
 
 ## [Unreleased]
 
-No unreleased changes.
+### Added
+
+- `artifact-index-v2` can content-address single-model validation probability
+  artifacts in addition to checkpoints, OOF files, and inference rules.
+- Single-model training now writes v2 indexes so `validate-run` detects size or
+  SHA-256 changes to `best_val_probs.npz`.
+
+### Compatibility
+
+- `artifact-index-v1` keeps its exact historical coverage, K-fold training
+  continues to write v1, and manifests with v1 or no artifact index remain
+  valid. Training, validation probabilities, inference, and submission behavior
+  are unchanged.
 
 ## [0.15.0] - 2026-08-22
 

@@ -3,6 +3,7 @@ import json
 import pytest
 import torch
 
+from src.artifact_index import ARTIFACT_INDEX_V2_SCHEMA
 from src.checkpoint import make_checkpoint_payload
 from src.run_manifest import (
     RUN_MANIFEST_SCHEMA,
@@ -112,6 +113,59 @@ def test_run_manifest_can_index_linked_artifacts_without_paths(tmp_path):
     assert index["artifacts"][0]["fileName"] == checkpoint.name
     assert len(index["artifacts"][0]["sha256"]) == 64
     assert str(tmp_path) not in json.dumps(index)
+
+
+def test_run_manifest_can_explicitly_write_v2_artifact_index(tmp_path):
+    path = tmp_path / "run-manifest.json"
+    manifest = create_run_manifest(
+        run_id="test-run",
+        command=["python", "-m", "src.train_spectrogram"],
+        args={},
+        data={},
+        transform={},
+        model={},
+        training={},
+        device="cpu",
+    )
+    write_run_manifest(path, manifest)
+
+    finalize_run_manifest_with_artifacts(
+        path,
+        "completed",
+        outputs={},
+        artifact_index_schema=ARTIFACT_INDEX_V2_SCHEMA,
+    )
+
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["artifactIndex"]["schemaVersion"] == ARTIFACT_INDEX_V2_SCHEMA
+    assert saved["artifactIndex"]["artifacts"] == []
+
+
+def test_run_manifest_rejects_explicit_unknown_artifact_index_schema(tmp_path):
+    path = tmp_path / "run-manifest.json"
+    manifest = create_run_manifest(
+        run_id="test-run",
+        command=["python", "-m", "src.train_spectrogram"],
+        args={},
+        data={},
+        transform={},
+        model={},
+        training={},
+        device="cpu",
+    )
+    write_run_manifest(path, manifest)
+
+    with pytest.raises(ValueError, match="Unsupported artifact index schema"):
+        finalize_run_manifest_with_artifacts(
+            path,
+            "completed",
+            outputs={},
+            artifact_index_schema="",
+        )
+
+    saved = json.loads(path.read_text(encoding="utf-8"))
+    assert saved["status"] == "running"
+    assert "artifactIndex" not in saved
 
 
 def test_artifact_index_finalizer_requires_completed_status(tmp_path):
